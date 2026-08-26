@@ -36,6 +36,9 @@ dependencies {
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+
+	implementation 'io.github.openfeign.querydsl:querydsl-jpa:7.1'
+	annotationProcessor 'io.github.openfeign.querydsl:querydsl-apt:7.1:jpa'
 }
 
 tasks.named('test') {
