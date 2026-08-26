@@ -1,0 +1,44 @@
+package com.example.cinema_middleware.domain.entity;
+
+import com.example.cinema_middleware.domain.entity.bases.BaseEntity;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
+import java.time.LocalDate;
+
+@Entity
+@SQLRestriction("is_delete = 'N'")
+@SQLDelete(sql = "UPDATE movie SET is_delete = 'Y' WHERE movie_id = ?")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
+public class Movie extends BaseEntity {
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "movie_id")
+    private Long id;
+
+    @Column(nullable = false, length = 100)
+    private String title;
+
+    @Column(nullable = false)
+    private String summary;
+
+    @Lob
+    @Column(nullable = false)
+    private String description;
+
+    @Column(nullable = false, length = 100)
+    private String runningTime;
+
+    @Column(nullable = false, length = 100)
+    private String ageRating;
+
+    @Column(nullable = false)
+    private LocalDate releaseDate;
+
+    private String posterUrl;
+}
