@@ -1,8 +1,8 @@
-package com.example.cinema_middleware.domain.entity;
+package com.example.cinema_middleware.v1.domain.entity;
 
-import com.example.cinema_middleware.domain.entity.bases.SimpleBaseEntity;
-import com.example.cinema_middleware.domain.entity.enums.MemberGrade;
-import com.example.cinema_middleware.domain.entity.enums.SocialProvider;
+import com.example.cinema_middleware.v1.domain.entity.base.SimpleBaseEntity;
+import com.example.cinema_middleware.v1.domain.entity.enums.MemberGrade;
+import com.example.cinema_middleware.v1.domain.entity.enums.SocialProvider;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

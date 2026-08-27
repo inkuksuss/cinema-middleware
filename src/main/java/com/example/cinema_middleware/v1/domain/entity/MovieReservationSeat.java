@@ -1,6 +1,6 @@
-package com.example.cinema_middleware.domain.entity;
+package com.example.cinema_middleware.v1.domain.entity;
 
-import com.example.cinema_middleware.domain.entity.bases.SimpleBaseEntity;
+import com.example.cinema_middleware.v1.domain.entity.base.SimpleBaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

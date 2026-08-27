@@ -1,4 +1,4 @@
-package com.example.cinema_middleware.domain.entity.bases;
+package com.example.cinema_middleware.v1.domain.entity.base;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;

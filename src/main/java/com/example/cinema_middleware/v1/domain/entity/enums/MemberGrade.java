@@ -1,4 +1,4 @@
-package com.example.cinema_middleware.domain.entity.enums;
+package com.example.cinema_middleware.v1.domain.entity.enums;
 
 public enum MemberGrade {
     // 회원
