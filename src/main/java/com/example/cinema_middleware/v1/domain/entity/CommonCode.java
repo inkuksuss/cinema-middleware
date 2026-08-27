@@ -1,7 +1,6 @@
 package com.example.cinema_middleware.v1.domain.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,8 +14,11 @@ import org.hibernate.annotations.SQLRestriction;
 @Getter
 public class CommonCode {
 
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "common_code_id")
     private Long id;
 
+    @Column(nullable = false)
     private String name;
 
     private String subName;
