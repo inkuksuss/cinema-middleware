@@ -2,8 +2,8 @@ package com.example.cinema_middleware.v1.domain.entity.enums;
 
 public enum MemberGrade {
     // 회원
-    COMMON, VIP,
+    ROLE_COMMON, ROLE_VIP,
 
     // 관리자
-    MANAGE_ADMIN, SUPER_ADMIN
+    ROLE_MANAGE_ADMIN, ROLE_SUPER_ADMIN
 }

@@ -34,7 +34,7 @@ public class Member extends SimpleBaseEntity {
     private String phoneNumber;
 
     @Column(nullable = false, length = 100)
-    private String birthDay;
+    private String birthday;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 100)
@@ -43,4 +43,42 @@ public class Member extends SimpleBaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 100)
     private SocialProvider socialProvider;
+
+    public Member(
+            String email,
+            String username,
+            String password,
+            String phoneNumber,
+            String birthday
+    ) {
+        this(email, username, password, phoneNumber, birthday, MemberGrade.ROLE_COMMON, SocialProvider.NORMAL);
+    }
+
+    public Member(String email,
+                  String username,
+                  String password,
+                  String phoneNumber,
+                  String birthday,
+                  SocialProvider socialProvider
+    ) {
+        this(email, username, password, phoneNumber, birthday, MemberGrade.ROLE_COMMON, socialProvider);
+    }
+
+    public Member(
+            String email,
+            String username,
+            String password,
+            String phoneNumber,
+            String birthday,
+            MemberGrade grade,
+            SocialProvider socialProvider
+    ) {
+        this.email = email;
+        this.username = username;
+        this.password = password;
+        this.phoneNumber = phoneNumber;
+        this.birthday = birthday;
+        this.grade = grade;
+        this.socialProvider = socialProvider;
+    }
 }
