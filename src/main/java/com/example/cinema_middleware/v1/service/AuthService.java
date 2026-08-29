@@ -5,7 +5,6 @@ import com.example.cinema_middleware.v1.repository.AuthTokenRepository;
 import com.example.cinema_middleware.v1.repository.MemberRepository;
 import com.example.cinema_middleware.v1.security.MemberPrincipal;
 import com.example.cinema_middleware.v1.security.AuthorizationConst;
-import com.example.cinema_middleware.v1.security.jwt.JwtProperties;
 import com.example.cinema_middleware.v1.security.jwt.JwtTokenProvider;
 import com.example.cinema_middleware.v1.service.dto.TokenIssueDto;
 import com.example.cinema_middleware.v1.support.exception.InvalidAccessTokenException;
@@ -29,7 +28,6 @@ public class AuthService {
     private final AuthTokenRepository authTokenRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
-    private final JwtProperties jwtProperties;
 
 
     public TokenIssueDto login(String email, String password) {
@@ -85,9 +83,14 @@ public class AuthService {
         authTokenRepository.saveRefreshToken(
                 memberId,
                 refreshToken,
-                Duration.ofSeconds(jwtProperties.refreshTokenExpireSeconds())
+                Duration.ofSeconds(jwtTokenProvider.getJwtProperties().refreshTokenExpireSeconds())
         );
 
-        return new TokenIssueDto(accessToken, refreshToken, AuthorizationConst.PREFIX, jwtProperties.accessTokenExpireSeconds());
+        return new TokenIssueDto(
+                accessToken,
+                refreshToken,
+                AuthorizationConst.PREFIX,
+                jwtTokenProvider.getJwtProperties().accessTokenExpireSeconds()
+        );
     }
 }

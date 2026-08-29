@@ -33,21 +33,6 @@ public class JwtTokenProvider {
         return createToken(memberId, null, null, jwtProperties.refreshTokenExpireSeconds());
     }
 
-    private String createToken(Long memberId, String email, String role, long expireSeconds) {
-        Date now = new Date();
-        Date expiredAt = new Date(now.getTime() + expireSeconds * 1000);
-
-        JwtBuilder builder = Jwts.builder()
-                .setSubject(String.valueOf(memberId))
-                .setIssuedAt(now)
-                .setExpiration(expiredAt);
-
-        if (email != null) builder.claim("email", email);
-        if (role != null) builder.claim("role", role);
-
-        return builder.signWith(key, SignatureAlgorithm.HS256).compact();
-    }
-
     public Claims parseClaims(String token) {
         Jws<Claims> jws = Jwts.parserBuilder()
                 .setSigningKey(key)
@@ -85,5 +70,24 @@ public class JwtTokenProvider {
         return StringUtils.hasText(token) && token.startsWith(AuthorizationConst.PREFIX) ?
                 token.substring(AuthorizationConst.PREFIX.length()) :
                 token;
+    }
+
+    public JwtProperties getJwtProperties() {
+        return this.jwtProperties;
+    }
+
+    private String createToken(Long memberId, String email, String role, long expireSeconds) {
+        Date now = new Date();
+        Date expiredAt = new Date(now.getTime() + expireSeconds * 1000);
+
+        JwtBuilder builder = Jwts.builder()
+                .setSubject(String.valueOf(memberId))
+                .setIssuedAt(now)
+                .setExpiration(expiredAt);
+
+        if (email != null) builder.claim("email", email);
+        if (role != null) builder.claim("role", role);
+
+        return builder.signWith(key, SignatureAlgorithm.HS256).compact();
     }
 }
