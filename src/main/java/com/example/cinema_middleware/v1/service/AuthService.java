@@ -6,7 +6,7 @@ import com.example.cinema_middleware.v1.repository.MemberRepository;
 import com.example.cinema_middleware.v1.security.MemberPrincipal;
 import com.example.cinema_middleware.v1.security.AuthorizationConst;
 import com.example.cinema_middleware.v1.security.jwt.JwtTokenProvider;
-import com.example.cinema_middleware.v1.service.dto.TokenIssueDto;
+import com.example.cinema_middleware.v1.service.dto.IssueTokenDto;
 import com.example.cinema_middleware.v1.support.exception.InvalidAccessTokenException;
 import com.example.cinema_middleware.v1.support.exception.InvalidRefreshTokenException;
 import lombok.RequiredArgsConstructor;
@@ -30,14 +30,14 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
 
 
-    public TokenIssueDto login(String email, String password) {
+    public IssueTokenDto login(String email, String password) {
         Authentication authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, password));
         MemberPrincipal principal = (MemberPrincipal) authenticate.getPrincipal();
 
         return this.issueTokens(principal.getId(), principal.getUsername(), principal.getRole());
     }
 
-    public TokenIssueDto reissue(String refreshToken) {
+    public IssueTokenDto reissue(String refreshToken) {
         if (!jwtTokenProvider.isValid(refreshToken)) {
             throw new InvalidRefreshTokenException("유효하지 않거나 만료된 refreshToken 입니다.");
         }
@@ -76,7 +76,7 @@ public class AuthService {
     }
 
 
-    private TokenIssueDto issueTokens(Long memberId, String email, String grade) {
+    private IssueTokenDto issueTokens(Long memberId, String email, String grade) {
         String accessToken = jwtTokenProvider.createAccessToken(memberId, email, grade);
         String refreshToken = jwtTokenProvider.createRefreshToken(memberId);
 
@@ -86,11 +86,12 @@ public class AuthService {
                 Duration.ofSeconds(jwtTokenProvider.getJwtProperties().refreshTokenExpireSeconds())
         );
 
-        return new TokenIssueDto(
-                accessToken,
-                refreshToken,
-                AuthorizationConst.PREFIX,
-                jwtTokenProvider.getJwtProperties().accessTokenExpireSeconds()
-        );
+        IssueTokenDto issueTokenDto = new IssueTokenDto();
+        issueTokenDto.setAccessToken(accessToken);
+        issueTokenDto.setRefreshToken(refreshToken);
+        issueTokenDto.setTokenType(AuthorizationConst.PREFIX);
+        issueTokenDto.setExpiredTime(jwtTokenProvider.getJwtProperties().accessTokenExpireSeconds());
+
+        return issueTokenDto;
     }
 }
