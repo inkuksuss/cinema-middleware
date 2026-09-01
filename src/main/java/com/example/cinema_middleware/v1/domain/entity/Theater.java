@@ -23,4 +23,12 @@ public class Theater extends BaseEntity {
     private String name;
 
     private String description;
+
+    // TODO 향후 캐시 or 비정규화할지 정한다 for 남은 자리 계산
+//    private Integer totalSeatCount = 0;
+
+    public Theater(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
 }

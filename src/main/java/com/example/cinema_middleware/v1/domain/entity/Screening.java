@@ -43,4 +43,13 @@ public class Screening extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 100)
     private ScreeningStatus status;
+
+    public Screening(Movie movie, Theater theater, LocalDateTime startAt, LocalDateTime endAt, BigDecimal price, ScreeningStatus status) {
+        this.movie = movie;
+        this.theater = theater;
+        this.startAt = startAt;
+        this.endAt = endAt;
+        this.price = price;
+        this.status = status;
+    }
 }

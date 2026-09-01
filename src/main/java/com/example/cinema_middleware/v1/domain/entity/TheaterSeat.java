@@ -33,4 +33,11 @@ public class TheaterSeat extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 100)
     private SeatGrade grade;
+
+    public TheaterSeat(Theater theater, String seatRow, String seatColumn, SeatGrade grade) {
+        this.theater = theater;
+        this.seatRow = seatRow;
+        this.seatColumn = seatColumn;
+        this.grade = grade;
+    }
 }

@@ -47,4 +47,15 @@ public class MovieReservation extends BaseEntity {
     private LocalDateTime expiredAt;
 
     private LocalDateTime canceledAt;
+
+    public MovieReservation(Member member, Screening screening, String code, Integer seatCount, BigDecimal totalPrice, ReservationStatus status, LocalDateTime expiredAt, LocalDateTime canceledAt) {
+        this.member = member;
+        this.screening = screening;
+        this.code = code;
+        this.seatCount = seatCount;
+        this.totalPrice = totalPrice;
+        this.status = status;
+        this.expiredAt = expiredAt;
+        this.canceledAt = canceledAt;
+    }
 }
