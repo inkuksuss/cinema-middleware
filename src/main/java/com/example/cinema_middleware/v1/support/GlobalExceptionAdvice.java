@@ -3,6 +3,7 @@ package com.example.cinema_middleware.v1.support;
 
 import com.example.cinema_middleware.v1.controller.response.ResponseCode;
 import com.example.cinema_middleware.v1.controller.response.Result;
+import com.example.cinema_middleware.v1.support.exception.InvalidAccessTokenException;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -20,6 +21,15 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionAdvice {
+
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ExceptionHandler(value = InvalidAccessTokenException.class)
+    public ResponseEntity<Result<Void>> invalidAccessTokenExceptionHandler(InvalidAccessTokenException e) {
+        log.error("[ex handler] ex", e);
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(Result.of(ResponseCode.UNAUTHORIZED.getCode(), "잘못된 인증 토큰입니다.", null));
+    }
 
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     @ExceptionHandler(value = BadCredentialsException.class)

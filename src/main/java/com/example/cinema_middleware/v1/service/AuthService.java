@@ -39,30 +39,34 @@ public class AuthService {
 
     public IssueTokenDto reissue(String refreshToken) {
         if (!jwtTokenProvider.isValid(refreshToken)) {
-            throw new InvalidRefreshTokenException("유효하지 않거나 만료된 refreshToken 입니다.");
+            throw new InvalidRefreshTokenException();
         }
 
         Long memberId = jwtTokenProvider.getMemberId(refreshToken);
         String savedToken = authTokenRepository.findRefreshTokenByMemberId(memberId)
-                .orElseThrow(() -> new InvalidRefreshTokenException("만료되었거나 이미 사용된 refreshToken 입니다."));
+                .orElseThrow(() -> new InvalidRefreshTokenException());
 
         // Redis에 저장된 refreshToken과 요청으로 들어온 값이 정확히 같아야 통과
         // (로그아웃했거나, 이미 한 번 재발급에 사용된 토큰이면 저장값과 달라짐 - 재사용 방지)
         if (savedToken == null || !savedToken.equals(refreshToken)) {
-            throw new InvalidRefreshTokenException("만료되었거나 이미 사용된 refreshToken 입니다.");
+            throw new InvalidRefreshTokenException();
         }
 
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new InvalidRefreshTokenException("잘못된 토큰입니다."));
+                .orElseThrow(() -> new InvalidRefreshTokenException());
 
-        return this.issueTokens(member.getId(), member.getEmail(), member.getGrade().name());
+        return this.issueTokens(
+                member.getId(),
+                member.getEmail(),
+                member.getGrade().name()
+        );
     }
 
 
     public void logout(String accessToken) {
         Long memberId = (Long) getContext().getAuthentication().getPrincipal();
         if (memberId == null) {
-            throw new InvalidAccessTokenException("잘못된 인증 토큰입니다.");
+            throw new InvalidAccessTokenException();
         }
 
         authTokenRepository.deleteRefreshTokenByMemberId(memberId);
@@ -73,6 +77,16 @@ public class AuthService {
         if (remaining > 0) {
             authTokenRepository.saveBlacklist(accessToken, Duration.ofSeconds(remaining));
         }
+    }
+
+    public Member getMemberByAccessToken(String accessToken) {
+        Long memberId = jwtTokenProvider.getMemberId(accessToken);
+        if (memberId == null) {
+            throw new InvalidAccessTokenException();
+        }
+
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> { throw new InvalidAccessTokenException(); });
     }
 
 

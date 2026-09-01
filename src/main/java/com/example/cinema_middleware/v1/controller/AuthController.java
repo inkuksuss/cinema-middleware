@@ -43,27 +43,20 @@ public class AuthController {
         catch (InvalidRefreshTokenException e) {
             return ResponseEntity
                     .status(HttpStatus.OK)
-                    .body(Result.of(ResponseCode.INVALID_REFRESH_TOKEN.getCode(), e.getMessage(), null));
+                    .body(Result.of(ResponseCode.INVALID_REFRESH_TOKEN.getCode(), "유효하지 않거나 만료된 refreshToken 입니다.", null));
         }
     }
 
     @PostMapping("/logout")
     public ResponseEntity<Result<Void>> logout(@RequestHeader("Authorization") String accessToken) {
         if (!StringUtils.hasText(accessToken)) {
-            throw new IllegalArgumentException("인증 토큰이 존재하지 않습니다.");
+            throw new InvalidAccessTokenException();
         }
 
-        try {
-            authService.logout(accessToken);
+        authService.logout(accessToken);
 
-            return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .body(Result.ofSuccess());
-        }
-        catch (InvalidAccessTokenException e) {
-            return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .body(Result.of(ResponseCode.INVALID_ARGUMENT.getCode(), e.getMessage(), null));
-        }
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(Result.ofSuccess());
     }
 }

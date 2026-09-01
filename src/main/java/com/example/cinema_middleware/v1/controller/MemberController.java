@@ -4,14 +4,14 @@ import com.example.cinema_middleware.v1.controller.request.SignUpRequest;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.MemberService;
 import com.example.cinema_middleware.v1.service.dto.AddMemberDto;
+import com.example.cinema_middleware.v1.service.dto.GetMemberDto;
+import com.example.cinema_middleware.v1.support.exception.InvalidAccessTokenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/member/")
@@ -36,8 +36,16 @@ public class MemberController {
                 .body(Result.ofSuccess(memberId));
     }
 
-    @PostMapping("/test")
-    public Long test() {
-        return 1L;
+    @PostMapping("/me")
+    public ResponseEntity<Result<GetMemberDto>> getMe(@RequestHeader("Authorization") String accessToken) {
+        if (!StringUtils.hasText(accessToken)) {
+            throw new InvalidAccessTokenException();
+        }
+
+        GetMemberDto getMemberDto = memberService.getMember(accessToken);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(Result.ofSuccess(getMemberDto));
     }
 }
