@@ -21,7 +21,7 @@ public class MovieService {
         LocalDate now = LocalDate.now();
 
         return movieRepository.findSummaryWithPage(pageable, now)
-                .map(MovieSummaryDto::new);
+                .map(MovieSummaryDto::from);
     }
 
 
@@ -29,6 +29,6 @@ public class MovieService {
         Movie findMovie = movieRepository.findById(movieId)
                 .orElseThrow(() -> { throw new IllegalArgumentException("잘못된 영화 ID입니다."); });
 
-        return new MovieDetailDto(findMovie);
+        return MovieDetailDto.from(findMovie);
     }
 }

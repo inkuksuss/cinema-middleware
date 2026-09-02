@@ -28,15 +28,18 @@ public class MovieSummaryDto {
 
     private MovieCategory category;
 
-    public MovieSummaryDto(Movie movie) {
-        this.id = movie.getId();
-        this.title = movie.getTitle();
-        this.summary = movie.getSummary();
-        this.runningTime = movie.getRunningTime();
-        this.ageRating = movie.getAgeRating();
-        this.releaseDate = movie.getReleaseDate();
-        this.posterUrl = movie.getPosterUrl();
-        this.viewCount = movie.getViewCount();
-        this.category = movie.getCategory();
+    public static MovieSummaryDto from(Movie movie) {
+        MovieSummaryDto movieSummary = new MovieSummaryDto();
+        movieSummary.id = movie.getId();
+        movieSummary.title = movie.getTitle();
+        movieSummary.summary = movie.getSummary();
+        movieSummary.runningTime = movie.getRunningTime();
+        movieSummary.ageRating = movie.getAgeRating();
+        movieSummary.releaseDate = movie.getReleaseDate();
+        movieSummary.posterUrl = movie.getPosterUrl();
+        movieSummary.viewCount = movie.getViewCount();
+        movieSummary.category = movie.getCategory();
+
+        return movieSummary;
     }
 }
