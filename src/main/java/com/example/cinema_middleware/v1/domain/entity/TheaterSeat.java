@@ -9,6 +9,10 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @SQLRestriction("is_delete = 'N'")
 @SQLDelete(sql = "UPDATE theater_seat SET is_delete = 'Y' WHERE theater_seat_id = ?")
@@ -24,6 +28,9 @@ public class TheaterSeat extends BaseEntity {
     @JoinColumn(name = "theater_id")
     private Theater theater;
 
+    @OneToMany(mappedBy = "theaterSeat")
+    private List<MovieReservationSeat> movieReservationSeatList = new ArrayList<>();
+
     @Column(nullable = false, length = 100)
     private String seatRow;
 
@@ -34,10 +41,19 @@ public class TheaterSeat extends BaseEntity {
     @Column(nullable = false, length = 100)
     private SeatGrade grade;
 
-    public TheaterSeat(Theater theater, String seatRow, String seatColumn, SeatGrade grade) {
-        this.theater = theater;
-        this.seatRow = seatRow;
-        this.seatColumn = seatColumn;
-        this.grade = grade;
+    @Column(precision = 10, scale = 2, nullable = false)
+    private BigDecimal price;
+
+    public static TheaterSeat of(Theater theater, String seatRow, String seatColumn, SeatGrade grade) {
+        TheaterSeat theaterSeat = new TheaterSeat();
+        theaterSeat.theater = theater;
+        theaterSeat.seatRow = seatRow;
+        theaterSeat.seatColumn = seatColumn;
+        theaterSeat.grade = grade;
+        theaterSeat.price = SeatGrade.NORMAL.equals(grade) ?
+                BigDecimal.valueOf(8_000L) :
+                BigDecimal.valueOf(10_000L);
+
+        return theaterSeat;
     }
 }
