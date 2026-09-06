@@ -5,7 +5,7 @@ import com.example.cinema_middleware.v1.controller.request.SignInRequest;
 import com.example.cinema_middleware.v1.controller.response.ResponseCode;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.AuthService;
-import com.example.cinema_middleware.v1.service.dto.IssueTokenDto;
+import com.example.cinema_middleware.v1.service.dto.TokenIssuance;
 import com.example.cinema_middleware.v1.support.exception.InvalidAccessTokenException;
 import com.example.cinema_middleware.v1.support.exception.InvalidRefreshTokenException;
 import lombok.RequiredArgsConstructor;
@@ -23,22 +23,22 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/sign-in")
-    public ResponseEntity<Result<IssueTokenDto>> signIn(@RequestBody @Validated SignInRequest request) {
-        IssueTokenDto issueTokenDto = authService.login(request.email(), request.password());
+    public ResponseEntity<Result<TokenIssuance>> signIn(@RequestBody @Validated SignInRequest request) {
+        TokenIssuance result = authService.login(request.email(), request.password());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(Result.ofSuccess(issueTokenDto));
+                .body(Result.ofSuccess(result));
     }
 
     @PostMapping("/reissue")
-    public ResponseEntity<Result<IssueTokenDto>> reissue(@RequestBody @Validated ReissueRequest request) {
+    public ResponseEntity<Result<TokenIssuance>> reissue(@RequestBody @Validated ReissueRequest request) {
         try {
-            IssueTokenDto issueTokenDto = authService.reissue(request.refreshToken());
+            TokenIssuance result = authService.reissue(request.refreshToken());
 
             return ResponseEntity
                     .status(HttpStatus.OK)
-                    .body(Result.ofSuccess(issueTokenDto));
+                    .body(Result.ofSuccess(result));
         }
         catch (InvalidRefreshTokenException e) {
             return ResponseEntity

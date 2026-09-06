@@ -3,7 +3,7 @@ package com.example.cinema_middleware.v1.service;
 import com.example.cinema_middleware.v1.domain.entity.Movie;
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieCategory;
 import com.example.cinema_middleware.v1.repository.MovieRepository;
-import com.example.cinema_middleware.v1.service.dto.MovieSummaryDto;
+import com.example.cinema_middleware.v1.service.dto.MovieSummary;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -52,7 +52,7 @@ class MovieServiceTest {
 
         //when
         PageRequest pageRequest = PageRequest.of(0, 10);
-        Page<MovieSummaryDto> movieSummary = movieService.getMovieSummaryPage(pageRequest);
+        Page<MovieSummary> movieSummary = movieService.getMovieSummaryPage(pageRequest);
 
         //then
         assertThat(movieSummary).hasSize(10);
@@ -79,7 +79,7 @@ class MovieServiceTest {
 
         //when
         PageRequest pageRequest = PageRequest.of(0, 10);
-        Page<MovieSummaryDto> movieSummary = movieService.getMovieSummaryPage(pageRequest);
+        Page<MovieSummary> movieSummary = movieService.getMovieSummaryPage(pageRequest);
 
         //then
         assertThat(movieSummary).hasSize(0);

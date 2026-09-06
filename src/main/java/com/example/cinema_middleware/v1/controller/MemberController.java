@@ -3,8 +3,8 @@ package com.example.cinema_middleware.v1.controller;
 import com.example.cinema_middleware.v1.controller.request.SignUpRequest;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.MemberService;
-import com.example.cinema_middleware.v1.service.dto.AddMemberDto;
-import com.example.cinema_middleware.v1.service.dto.GetMemberDto;
+import com.example.cinema_middleware.v1.service.dto.AddMemberForm;
+import com.example.cinema_middleware.v1.service.dto.MemberDetail;
 import com.example.cinema_middleware.v1.support.exception.InvalidAccessTokenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,30 +22,30 @@ public class MemberController {
 
     @PostMapping("/sign-up")
     public ResponseEntity<Result<Long>> signUp(@RequestBody @Validated SignUpRequest request) {
-        AddMemberDto addMemberDto = new AddMemberDto();
-        addMemberDto.setEmail(request.email());
-        addMemberDto.setUsername(request.username());
-        addMemberDto.setPassword(request.password());
-        addMemberDto.setPhoneNumber(request.phoneNumber());
-        addMemberDto.setBirthday(request.birthday());
+        AddMemberForm addMemberForm = new AddMemberForm();
+        addMemberForm.setEmail(request.email());
+        addMemberForm.setUsername(request.username());
+        addMemberForm.setPassword(request.password());
+        addMemberForm.setPhoneNumber(request.phoneNumber());
+        addMemberForm.setBirthday(request.birthday());
 
-        Long memberId = memberService.addMember(addMemberDto);
+        memberService.addMember(addMemberForm);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(Result.ofSuccess(memberId));
+                .body(Result.ofSuccess());
     }
 
     @PostMapping("/me")
-    public ResponseEntity<Result<GetMemberDto>> getMe(@RequestHeader("Authorization") String accessToken) {
+    public ResponseEntity<Result<MemberDetail>> getMe(@RequestHeader("Authorization") String accessToken) {
         if (!StringUtils.hasText(accessToken)) {
             throw new InvalidAccessTokenException();
         }
 
-        GetMemberDto getMemberDto = memberService.getMember(accessToken);
+        MemberDetail result = memberService.getMember(accessToken);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(Result.ofSuccess(getMemberDto));
+                .body(Result.ofSuccess(result));
     }
 }

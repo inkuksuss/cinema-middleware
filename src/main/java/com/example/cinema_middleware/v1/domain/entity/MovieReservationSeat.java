@@ -8,8 +8,6 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
-import java.math.BigDecimal;
-
 @Entity
 
 // 낙관적 락으로도 해결할 수 있지만 그 경우 남은 좌석을 계산하려면 movie_reservation 테이블을 조인에 포함시켜야한다.
@@ -40,22 +38,25 @@ public class MovieReservationSeat extends SimpleBaseEntity {
     @JoinColumn(name = "theater_seat_id")
     private TheaterSeat theaterSeat;
 
-    @Column(precision = 10, scale = 2, nullable = false)
-    private BigDecimal price;
-
     private String isActive = "Y";
 
-    public MovieReservationSeat(MovieReservation reservation, Screening screening, TheaterSeat theaterSeat, BigDecimal price) {
+    public static MovieReservationSeat of(MovieReservation reservation, Screening screening, TheaterSeat theaterSeat) {
+        MovieReservationSeat movieReservationSeat = new MovieReservationSeat();
+        movieReservationSeat.reservation = reservation;
+        movieReservationSeat.screening = screening;
+        movieReservationSeat.theaterSeat = theaterSeat;
+
+        return movieReservationSeat;
+    }
+
+    public void setReservation(MovieReservation reservation) {
         this.reservation = reservation;
-        this.screening = screening;
-        this.theaterSeat = theaterSeat;
-        this.price = price;
     }
 
     /*
-    좌석 만료 혹은 취소 시 null 값으로 바꾸어 unique 제약조건에 걸리지 않게 한다.
-     */
-    public void changeIsActive() {
+        좌석 만료 혹은 취소 시 null 값으로 바꾸어 unique 제약조건에 걸리지 않게 한다.
+         */
+    public void giveUpSeat() {
         this.isActive = null;
     }
 }

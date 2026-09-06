@@ -7,7 +7,6 @@ public enum ResponseCode {
     NO_MATCH_EMAIL_OR_PASSWORD(2),
     INVALID_REFRESH_TOKEN(3),
     //TODO
-
     INVALID_ARGUMENT(5),
     ILLEGAL_STATE(6),
     NO_SUPPORT_METHOD(7),
@@ -16,6 +15,10 @@ public enum ResponseCode {
     FORBIDDEN(10),
     NOT_FOUND(11),
     PAYMENT_FAILED(12),
+    SEAT_ALREADY_TAKEN(13),
+    SCREENING_NOT_ON_SALE(14),
+    EXCEED_SEAT_LIMIT(15),
+    RESERVATION_EXPIRED(16),
     EXCEPTION(99);
 
     private final int code;

@@ -9,6 +9,7 @@ import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -21,6 +22,15 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionAdvice {
+
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ExceptionHandler(value = AccessDeniedException.class)
+    public ResponseEntity<Result<Void>> accessDeniedExceptionHandler(AccessDeniedException e) {
+        log.error("[ex handler] ex", e);
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(Result.of(ResponseCode.UNAUTHORIZED.getCode(), "잘못된 접근 권합입니다.", null));
+    }
 
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     @ExceptionHandler(value = InvalidAccessTokenException.class)

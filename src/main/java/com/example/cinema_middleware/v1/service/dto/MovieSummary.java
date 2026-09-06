@@ -4,11 +4,13 @@ import com.example.cinema_middleware.v1.domain.entity.Movie;
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieCategory;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDate;
 
 @Getter @Setter
-public class MovieSummaryDto {
+@ToString
+public class MovieSummary {
 
     private Long id;
 
@@ -28,8 +30,8 @@ public class MovieSummaryDto {
 
     private MovieCategory category;
 
-    public static MovieSummaryDto from(Movie movie) {
-        MovieSummaryDto movieSummary = new MovieSummaryDto();
+    public static MovieSummary from(Movie movie) {
+        MovieSummary movieSummary = new MovieSummary();
         movieSummary.id = movie.getId();
         movieSummary.title = movie.getTitle();
         movieSummary.summary = movie.getSummary();

@@ -7,7 +7,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -26,38 +25,28 @@ public class ScreeningSummary {
 
     private LocalTime startAt;
 
-    private BigDecimal price;
-
     private ScreeningStatus status;
 
     private Integer totalSeatCount = 0;
 
     private Integer soldOutSeatCount = 0;
 
-    public void mapSeatCount(List<SeatCount> seatCountList) {
-        seatCountList.stream()
-                .filter(count -> this.id.equals(count.getScreeningId()))
-                .forEach(count -> {
-                    this.totalSeatCount = count.getTotalSeatCount().intValue();
-                    this.soldOutSeatCount = count.getSoldOutSeatCount().intValue();
-                });
-    }
-
     public static ScreeningSummary from(Screening screening) {
         ScreeningSummary screeningSummary = new ScreeningSummary();
         screeningSummary.id = screening.getId();
         screeningSummary.startDate = screening.getStartDate();
         screeningSummary.startAt = screening.getStartAt();
-        screeningSummary.price = screening.getPrice();
         screeningSummary.status = screening.getStatus();
 
-        if (screening.getMovie() != null) {
-            screeningSummary.movieSummary = MovieSummary.from(screening.getMovie());
-        }
-        if (screening.getTheater() != null) {
-            screeningSummary.theaterSummary = TheaterSummary.from(screening.getTheater());
-        }
-
         return screeningSummary;
+    }
+
+    public void addSeatCount(List<SeatCount> seatCountList) {
+        for (SeatCount seatCount : seatCountList) {
+            if (this.id.equals(seatCount.getScreeningId())) {
+                this.totalSeatCount = seatCount.getTotalSeatCount().intValue();
+                this.soldOutSeatCount = seatCount.getSoldOutSeatCount().intValue();
+            }
+        }
     }
 }

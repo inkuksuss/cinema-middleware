@@ -1,6 +1,7 @@
 package com.example.cinema_middleware.v1.repository;
 
 import com.example.cinema_middleware.v1.domain.entity.Movie;
+import com.example.cinema_middleware.v1.support.PageUtils;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.*;
@@ -19,7 +20,7 @@ public class MovieRepositoryImpl implements MovieRepositoryQuery {
     }
 
     @Override
-    public Page<Movie> findSummaryWithPage(Pageable pageable, LocalDate targetDate) {
+    public Page<Movie> findMoviePageByDate(Pageable pageable, LocalDate targetDate) {
         List<Movie> content = queryFactory
                 .select(movie)
                 .from(movie)
@@ -45,7 +46,7 @@ public class MovieRepositoryImpl implements MovieRepositoryQuery {
     }
 
     @Override
-    public Slice<Movie> findSummaryWithSlice(Pageable pageable, LocalDate targetDate) {
+    public Slice<Movie> findMovieSliceByDate(Pageable pageable, LocalDate targetDate) {
         List<Movie> content = queryFactory
                 .select(movie)
                 .from(movie)
@@ -58,11 +59,6 @@ public class MovieRepositoryImpl implements MovieRepositoryQuery {
                 .limit(pageable.getPageSize() + 1)
                 .fetch();
 
-        boolean hasNext = content.size() > pageable.getPageSize();
-        if (hasNext) {
-            content = content.subList(0, pageable.getPageSize());
-        }
-
-        return new SliceImpl<>(content, pageable, hasNext);
+        return PageUtils.createSlice(content, pageable);
     }
 }

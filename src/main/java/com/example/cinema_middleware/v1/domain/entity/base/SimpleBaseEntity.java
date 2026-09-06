@@ -24,4 +24,12 @@ public class SimpleBaseEntity {
     @ColumnDefault("'N'")
     @Column(nullable = false, length = 1, columnDefinition = "CHAR(1)")
     private String isDelete = "N";
+
+    public void initCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public void changeUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }

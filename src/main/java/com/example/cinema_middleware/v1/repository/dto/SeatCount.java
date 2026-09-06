@@ -2,10 +2,9 @@ package com.example.cinema_middleware.v1.repository.dto;
 
 
 import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 
-@Getter @Setter
+@Getter
 @ToString
 public class SeatCount {
 

@@ -2,7 +2,6 @@ package com.example.cinema_middleware.v1.service;
 
 import com.example.cinema_middleware.v1.domain.entity.*;
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieCategory;
-import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
 import com.example.cinema_middleware.v1.domain.entity.enums.ScreeningStatus;
 import com.example.cinema_middleware.v1.domain.entity.enums.SeatGrade;
 import com.example.cinema_middleware.v1.repository.*;
@@ -17,8 +16,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -62,7 +61,7 @@ class MovieReservationSeatServiceTest {
     void addReservationSeatCheckDuplicate() {
         //given
         LocalDate now = LocalDate.now();
-        Member member = new Member(
+        Member member = Member.of(
                 "ad@naver.com",
                 "hello",
                 "123",
@@ -74,11 +73,11 @@ class MovieReservationSeatServiceTest {
         Theater savedTheater = theaterRepository.save(theater);
         Movie movie = new Movie("hello", "aa", 120, "19", now, now.plusDays(7), MovieCategory.ROMANCE);
         Movie savedMovie = movieRepository.save(movie);
-        Screening screening = new Screening(savedMovie, savedTheater, now.atTime(LocalTime.MIN), LocalDateTime.of(now.plusDays(7), LocalTime.MIN), new BigDecimal(10000), ScreeningStatus.ON_SALE);
+        Screening screening = Screening.of(savedMovie, savedTheater, now, LocalTime.MIN, ScreeningStatus.ON_SALE);
         Screening savedScreening = screeningRepository.save(screening);
-        MovieReservation movieReservation = new MovieReservation(savedMember, savedScreening, "abc", 3, new BigDecimal(30000), ReservationStatus.SUCCESS, null, null);
+        MovieReservation movieReservation = MovieReservation.of(savedMember, savedScreening, List.of(BigDecimal.valueOf(10000)));
         MovieReservation savedReservation = movieReservationRepository.save(movieReservation);
-        TheaterSeat theaterSeat = new TheaterSeat(savedTheater, "1", "a", SeatGrade.NORMAL);
+        TheaterSeat theaterSeat = TheaterSeat.of(savedTheater, "1", "a", SeatGrade.NORMAL);
         TheaterSeat savedTheaterSeat = theaterSeatRepository.save(theaterSeat);
 
         ExecutorService es = Executors.newFixedThreadPool(10);
@@ -90,7 +89,7 @@ class MovieReservationSeatServiceTest {
         for (int i = 0; i < 10; i++) {
             es.submit(() -> {
                 try {
-                    MovieReservationSeat movieReservationSeat = new MovieReservationSeat(savedReservation, savedScreening, savedTheaterSeat, new BigDecimal(10000));
+                    MovieReservationSeat movieReservationSeat = MovieReservationSeat.of(savedReservation, savedScreening, savedTheaterSeat);
                     startLatch.await();
                     movieReservationSeatRepository.save(movieReservationSeat);
                 }
@@ -124,7 +123,7 @@ class MovieReservationSeatServiceTest {
     void addReservationSeatCheckDuplicateNull() {
         //given
         LocalDate now = LocalDate.now();
-        Member member = new Member(
+        Member member = Member.of(
                 "ad@naver.com",
                 "hello",
                 "123",
@@ -136,11 +135,11 @@ class MovieReservationSeatServiceTest {
         Theater savedTheater = theaterRepository.save(theater);
         Movie movie = new Movie("hello", "aa", 120, "19", now, now.plusDays(7), MovieCategory.ROMANCE);
         Movie savedMovie = movieRepository.save(movie);
-        Screening screening = new Screening(savedMovie, savedTheater, now.atTime(LocalTime.MIN), LocalDateTime.of(now.plusDays(7), LocalTime.MIN), new BigDecimal(10000), ScreeningStatus.ON_SALE);
+        Screening screening = Screening.of(savedMovie, savedTheater, now, LocalTime.MIN, ScreeningStatus.ON_SALE);
         Screening savedScreening = screeningRepository.save(screening);
-        MovieReservation movieReservation = new MovieReservation(savedMember, savedScreening, "abc", 3, new BigDecimal(30000), ReservationStatus.SUCCESS, null, null);
+        MovieReservation movieReservation = MovieReservation.of(savedMember, savedScreening, List.of(BigDecimal.valueOf(40000)));
         MovieReservation savedReservation = movieReservationRepository.save(movieReservation);
-        TheaterSeat theaterSeat = new TheaterSeat(savedTheater, "1", "a", SeatGrade.NORMAL);
+        TheaterSeat theaterSeat = TheaterSeat.of(savedTheater, "1", "a", SeatGrade.NORMAL);
         TheaterSeat savedTheaterSeat = theaterSeatRepository.save(theaterSeat);
 
         ExecutorService es = Executors.newFixedThreadPool(10);
@@ -152,8 +151,8 @@ class MovieReservationSeatServiceTest {
         for (int i = 0; i < 10; i++) {
             es.submit(() -> {
                 try {
-                    MovieReservationSeat movieReservationSeat = new MovieReservationSeat(savedReservation, savedScreening, savedTheaterSeat, new BigDecimal(10000));
-                    movieReservationSeat.changeIsActive();
+                    MovieReservationSeat movieReservationSeat = MovieReservationSeat.of(savedReservation, savedScreening, savedTheaterSeat);
+                    movieReservationSeat.giveUpSeat();
                     startLatch.await();
                     movieReservationSeatRepository.save(movieReservationSeat);
                     saveCount.incrementAndGet();

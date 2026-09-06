@@ -1,17 +1,19 @@
 package com.example.cinema_middleware.v1.service;
 
 import com.example.cinema_middleware.v1.domain.entity.Member;
+import com.example.cinema_middleware.v1.domain.entity.enums.MemberGrade;
 import com.example.cinema_middleware.v1.repository.AuthTokenRepository;
 import com.example.cinema_middleware.v1.repository.MemberRepository;
 import com.example.cinema_middleware.v1.security.MemberPrincipal;
 import com.example.cinema_middleware.v1.security.AuthorizationConst;
 import com.example.cinema_middleware.v1.security.jwt.JwtTokenProvider;
-import com.example.cinema_middleware.v1.service.dto.IssueTokenDto;
+import com.example.cinema_middleware.v1.service.dto.TokenIssuance;
 import com.example.cinema_middleware.v1.support.exception.InvalidAccessTokenException;
 import com.example.cinema_middleware.v1.support.exception.InvalidRefreshTokenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
@@ -30,14 +32,14 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
 
 
-    public IssueTokenDto login(String email, String password) {
+    public TokenIssuance login(String email, String password) {
         Authentication authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, password));
         MemberPrincipal principal = (MemberPrincipal) authenticate.getPrincipal();
 
         return this.issueTokens(principal.getId(), principal.getUsername(), principal.getRole());
     }
 
-    public IssueTokenDto reissue(String refreshToken) {
+    public TokenIssuance reissue(String refreshToken) {
         if (!jwtTokenProvider.isValid(refreshToken)) {
             throw new InvalidRefreshTokenException();
         }
@@ -89,8 +91,31 @@ public class AuthService {
                 .orElseThrow(() -> { throw new InvalidAccessTokenException(); });
     }
 
+    public Member getMember() {
+        MemberPrincipal principal = (MemberPrincipal) getContext().getAuthentication().getPrincipal();
 
-    private IssueTokenDto issueTokens(Long memberId, String email, String grade) {
+        Member member = memberRepository.findById(principal.getId())
+                .orElseThrow(() -> { throw new InvalidAccessTokenException(); });
+
+        if (MemberGrade.ROLE_COMMON != member.getGrade() || MemberGrade.ROLE_VIP != member.getGrade()) {
+            throw new AuthorizationDeniedException("잘못된 접근입니다.");
+        }
+
+        return member;
+    }
+
+    public Long getMemberId() {
+        MemberPrincipal principal = (MemberPrincipal) getContext().getAuthentication().getPrincipal();
+
+        return principal.getId();
+    }
+
+    public Member getMemberReference() {
+        return memberRepository.getReferenceById(this.getMemberId());
+    }
+
+
+    private TokenIssuance issueTokens(Long memberId, String email, String grade) {
         String accessToken = jwtTokenProvider.createAccessToken(memberId, email, grade);
         String refreshToken = jwtTokenProvider.createRefreshToken(memberId);
 
@@ -100,12 +125,12 @@ public class AuthService {
                 Duration.ofSeconds(jwtTokenProvider.getJwtProperties().refreshTokenExpireSeconds())
         );
 
-        IssueTokenDto issueTokenDto = new IssueTokenDto();
-        issueTokenDto.setAccessToken(accessToken);
-        issueTokenDto.setRefreshToken(refreshToken);
-        issueTokenDto.setTokenType(AuthorizationConst.PREFIX);
-        issueTokenDto.setExpiredTime(jwtTokenProvider.getJwtProperties().accessTokenExpireSeconds());
+        TokenIssuance tokenIssuance = new TokenIssuance();
+        tokenIssuance.setAccessToken(accessToken);
+        tokenIssuance.setRefreshToken(refreshToken);
+        tokenIssuance.setTokenType(AuthorizationConst.PREFIX);
+        tokenIssuance.setExpiredTime(jwtTokenProvider.getJwtProperties().accessTokenExpireSeconds());
 
-        return issueTokenDto;
+        return tokenIssuance;
     }
 }

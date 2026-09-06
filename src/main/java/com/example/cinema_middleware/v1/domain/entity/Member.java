@@ -44,27 +44,7 @@ public class Member extends SimpleBaseEntity {
     @Column(nullable = false, length = 100)
     private SocialProvider socialProvider;
 
-    public Member(
-            String email,
-            String username,
-            String password,
-            String phoneNumber,
-            String birthday
-    ) {
-        this(email, username, password, phoneNumber, birthday, MemberGrade.ROLE_COMMON, SocialProvider.NORMAL);
-    }
-
-    public Member(String email,
-                  String username,
-                  String password,
-                  String phoneNumber,
-                  String birthday,
-                  SocialProvider socialProvider
-    ) {
-        this(email, username, password, phoneNumber, birthday, MemberGrade.ROLE_COMMON, socialProvider);
-    }
-
-    public Member(
+    public static Member of(
             String email,
             String username,
             String password,
@@ -73,12 +53,37 @@ public class Member extends SimpleBaseEntity {
             MemberGrade grade,
             SocialProvider socialProvider
     ) {
-        this.email = email;
-        this.username = username;
-        this.password = password;
-        this.phoneNumber = phoneNumber;
-        this.birthday = birthday;
-        this.grade = grade;
-        this.socialProvider = socialProvider;
+        Member member = new Member();
+        member.email = email;
+        member.username = username;
+        member.password = password;
+        member.phoneNumber = phoneNumber;
+        member.birthday = birthday;
+        member.grade = grade;
+        member.socialProvider = socialProvider;
+
+        return member;
+    }
+
+
+    public static Member of(
+            String email,
+            String username,
+            String password,
+            String phoneNumber,
+            String birthday
+    ) {
+        return of(email, username, password, phoneNumber, birthday, MemberGrade.ROLE_COMMON, SocialProvider.NORMAL);
+    }
+
+    public static Member of(
+            String email,
+            String username,
+            String password,
+            String phoneNumber,
+            String birthday,
+            SocialProvider socialProvider
+    ) {
+        return of(email, username, password, phoneNumber, birthday, MemberGrade.ROLE_COMMON, socialProvider);
     }
 }

@@ -9,7 +9,7 @@ import java.time.LocalDate;
 
 public interface MovieRepositoryQuery {
 
-    Page<Movie> findSummaryWithPage(Pageable pageable, LocalDate targetDate);
+    Page<Movie> findMoviePageByDate(Pageable pageable, LocalDate targetDate);
 
-    Slice<Movie> findSummaryWithSlice(Pageable pageable, LocalDate targetDate);
+    Slice<Movie> findMovieSliceByDate(Pageable pageable, LocalDate targetDate);
 }

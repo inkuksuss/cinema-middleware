@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Entity
 @SQLRestriction("is_delete = 'N'")
@@ -32,24 +32,23 @@ public class Screening extends BaseEntity {
     private Theater theater;
 
     @Column(nullable = false)
-    private LocalDateTime startAt;
+    private LocalDate startDate;
 
     @Column(nullable = false)
-    private LocalDateTime endAt;
-
-    @Column(precision = 10, scale = 2, nullable = false)
-    private BigDecimal price;
+    private LocalTime startAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 100)
     private ScreeningStatus status;
 
-    public Screening(Movie movie, Theater theater, LocalDateTime startAt, LocalDateTime endAt, BigDecimal price, ScreeningStatus status) {
-        this.movie = movie;
-        this.theater = theater;
-        this.startAt = startAt;
-        this.endAt = endAt;
-        this.price = price;
-        this.status = status;
+    public static Screening of(Movie movie, Theater theater, LocalDate startDate, LocalTime startAt, ScreeningStatus status) {
+        Screening screening = new Screening();
+        screening.movie = movie;
+        screening.theater = theater;
+        screening.startDate = startDate;
+        screening.startAt = startAt;
+        screening.status = status;
+
+        return screening;
     }
 }
