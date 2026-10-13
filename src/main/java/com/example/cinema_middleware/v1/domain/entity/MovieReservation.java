@@ -2,6 +2,7 @@ package com.example.cinema_middleware.v1.domain.entity;
 
 import com.example.cinema_middleware.v1.domain.entity.base.BaseEntity;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
+import com.example.cinema_middleware.v1.repository.dto.SeatData;
 import com.example.cinema_middleware.v1.support.exception.ReservationExpiredException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -12,8 +13,10 @@ import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Entity
 @SQLRestriction("is_delete = 'N'")
@@ -38,11 +41,17 @@ public class MovieReservation extends BaseEntity {
     @JoinColumn(name = "coupon_issuance_id")
     private CouponIssuance couponIssuance;
 
+    @OneToOne(mappedBy = "reservation")
+    private MoviePayment payment;
+
+    @OneToMany(mappedBy = "reservation")
+    private List<MovieReservationSeat> reservationSeatList = new ArrayList<>();
+
     @Column(nullable = false)
     private String code;
 
     @Column(nullable = false)
-    private Integer seatCount;
+    private String seatNames;
 
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal totalPrice;
@@ -55,13 +64,13 @@ public class MovieReservation extends BaseEntity {
 
     private LocalDateTime canceledAt;
 
-    public static MovieReservation of(Member member, Screening screening, List<BigDecimal> priceList) {
+    public static MovieReservation create(Member member, Screening screening, List<SeatData> seatDataList) {
         MovieReservation movieReservation = new MovieReservation();
         movieReservation.member = member;
         movieReservation.screening = screening;
         movieReservation.code = UUID.randomUUID().toString();
-        movieReservation.seatCount = priceList.size();
-        movieReservation.totalPrice = priceList.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        movieReservation.seatNames = seatDataList.stream().map(s -> s.getSeatRow() + s.getSeatColumn()).collect(Collectors.joining(", "));
+        movieReservation.totalPrice = seatDataList.stream().map(SeatData::getPrice).reduce(BigDecimal.ZERO, BigDecimal::add);
         movieReservation.status = ReservationStatus.PENDING;
         movieReservation.expiredAt = LocalDateTime.now().plusHours(1);
 
@@ -82,6 +91,10 @@ public class MovieReservation extends BaseEntity {
         this.expiredAt = null;
         this.issueCode();
         this.changeUpdatedAt(now);
+    }
+
+    public int getSeatCount() {
+        return this.seatNames.length() - this.seatNames.replace(", ", "").length();
     }
 
     private void issueCode() {

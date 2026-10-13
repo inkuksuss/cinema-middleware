@@ -58,7 +58,7 @@ class ScreeningRepositoryTest {
         Movie savedMovie = movieRepository.save(movie);
         Screening screening = Screening.of(savedMovie, savedTheater, now, LocalTime.MIN, ScreeningStatus.ON_SALE);
         Screening savedScreening = screeningRepository.save(screening);
-        MovieReservation movieReservation = MovieReservation.of(savedMember, savedScreening, List.of(BigDecimal.valueOf(10000)));
+        MovieReservation movieReservation = MovieReservation.create(savedMember, savedScreening, List.of(BigDecimal.valueOf(10000)));
         MovieReservation savedReservation = movieReservationRepository.save(movieReservation);
         TheaterSeat theaterSeat = TheaterSeat.of(savedTheater, "1", "a", SeatGrade.NORMAL);
         TheaterSeat theaterSeat2 = TheaterSeat.of(savedTheater, "1", "b", SeatGrade.NORMAL);
@@ -81,7 +81,7 @@ class ScreeningRepositoryTest {
 
         screeningRepository.findSeatCountListByIdList(List.of(1L));
         screeningRepository.findAllSeatByScreeningId(1L);
-        screeningRepository.findSeatPriceListFor(1L, List.of(1L, 2L));
+        screeningRepository.findSeatDataListFor(1L, List.of(1L, 2L));
     }
 
 }

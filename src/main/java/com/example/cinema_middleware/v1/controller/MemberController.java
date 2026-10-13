@@ -38,9 +38,7 @@ public class MemberController {
 
     @PostMapping("/me")
     public ResponseEntity<Result<MemberDetail>> getMe(@RequestHeader("Authorization") String accessToken) {
-        if (!StringUtils.hasText(accessToken)) {
-            throw new InvalidAccessTokenException();
-        }
+        if (!StringUtils.hasText(accessToken)) { throw new InvalidAccessTokenException(); }
 
         MemberDetail result = memberService.getMember(accessToken);
 

@@ -1,19 +1,15 @@
 package com.example.cinema_middleware.v1.repository;
 
-import com.example.cinema_middleware.v1.domain.entity.QMovieReservationSeat;
-import com.example.cinema_middleware.v1.domain.entity.QTheaterSeat;
 import com.example.cinema_middleware.v1.domain.entity.Screening;
 import com.example.cinema_middleware.v1.repository.dto.ScreeningSeat;
 import com.example.cinema_middleware.v1.repository.dto.SeatCount;
-import com.example.cinema_middleware.v1.repository.dto.SeatPrice;
+import com.example.cinema_middleware.v1.repository.dto.SeatData;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.EntityManager;
-import org.springframework.data.domain.*;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
@@ -97,13 +93,15 @@ public class ScreeningRepositoryImpl implements ScreeningRepositoryQuery {
     }
 
     @Override
-    public List<SeatPrice> findSeatPriceListFor(@Param("screeningId") Long screeningId, @Param("theaterSeatIdList") List<Long> theaterSeatIdList) {
+    public List<SeatData> findSeatDataListFor(@Param("screeningId") Long screeningId, @Param("theaterSeatIdList") List<Long> theaterSeatIdList) {
         return queryFactory
                 .select(Projections.constructor(
-                        SeatPrice.class,
+                        SeatData.class,
                         screening.id,
                         screening.status,
                         theaterSeat.id,
+                        theaterSeat.seatRow,
+                        theaterSeat.seatColumn,
                         theaterSeat.grade,
                         theaterSeat.price
                 ))

@@ -104,4 +104,17 @@ public class MovieReservationController {
                     .status(HttpStatus.OK)
                     .body(Result.ofSuccess(result));
     }
+
+    @GetMapping("/{reservationId}")
+    public ResponseEntity<Result<MovieReservationDetail>> getReservationDetail(
+            @PathVariable Long reservationId
+    ) {
+        if (reservationId == null) throw new IllegalArgumentException("예매 고유값이 옳바르지 않습니다.");
+
+        MovieReservationDetail result = movieReservationService.getReservationDetail(reservationId);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(Result.ofSuccess(result));
+    }
 }

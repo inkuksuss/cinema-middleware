@@ -11,13 +11,17 @@ import java.math.BigDecimal;
 @Getter
 @ToString
 @AllArgsConstructor
-public class SeatPrice {
+public class SeatData {
 
     private Long screeningId;
 
     private ScreeningStatus screeningStatus;
 
     private Long theaterSeatId;
+
+    private String seatRow;
+
+    private String seatColumn;
 
     private SeatGrade grade;
 

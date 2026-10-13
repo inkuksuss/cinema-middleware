@@ -8,10 +8,12 @@ import com.example.cinema_middleware.v1.repository.MovieReservationRepository;
 import com.example.cinema_middleware.v1.repository.MovieReservationSeatRepository;
 import com.example.cinema_middleware.v1.repository.ScreeningRepository;
 import com.example.cinema_middleware.v1.repository.TheaterSeatRepository;
-import com.example.cinema_middleware.v1.repository.dto.SeatPrice;
+import com.example.cinema_middleware.v1.repository.dto.SeatData;
 import com.example.cinema_middleware.v1.service.dto.MovieReservationDetail;
+import com.example.cinema_middleware.v1.service.dto.PaymentSummary;
 import com.example.cinema_middleware.v1.support.exception.ScreeningNotOnSaleException;
 import com.example.cinema_middleware.v1.support.exception.SeatAlreadyTakenException;
+import com.example.cinema_middleware.v1.support.exception.TargetNotFoundException;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -22,7 +24,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -38,17 +39,14 @@ public class MovieReservationService {
     public MovieReservationDetail addReservation(Long screeningId, List<Long> theaterSeatIdList) {
         Member memberRef = authService.getMemberReference();
         Screening screeningRef = screeningRepository.getReferenceById(screeningId);
-        List<SeatPrice> seatPriceList = screeningRepository.findSeatPriceListFor(screeningId, theaterSeatIdList);
 
-        if (seatPriceList.size() == 0) {
-            throw new NoSuchElementException();
+        List<SeatData> seatDataList = screeningRepository.findSeatDataListFor(screeningId, theaterSeatIdList);
+
+        if (seatDataList.size() == 0 || seatDataList.size() != theaterSeatIdList.size()) {
+            throw new TargetNotFoundException("좌석 정보를 찾을 수 없습니다.");
         }
 
-        if (seatPriceList.size() != theaterSeatIdList.size()) {
-            throw new IllegalStateException();
-        }
-
-        if (!ScreeningStatus.ON_SALE.equals(seatPriceList.getFirst().getScreeningStatus())) {
+        if (!ScreeningStatus.ON_SALE.equals(seatDataList.getFirst().getScreeningStatus())) {
             throw new ScreeningNotOnSaleException();
         }
 
@@ -61,27 +59,22 @@ public class MovieReservationService {
             movieReservationSeatRepository.saveAllAndFlush(reservationSeatList);
         }
         catch (DataIntegrityViolationException e) {
-            throw new SeatAlreadyTakenException();
+            throw new SeatAlreadyTakenException("이미 예매된 좌석입니다.");
         }
 
-        MovieReservation movieReservation = MovieReservation.of(
-                memberRef,
-                screeningRef,
-                seatPriceList.stream().map(SeatPrice::getPrice).toList()
-        );
+        MovieReservation createdReservation = MovieReservation.create(memberRef, screeningRef, seatDataList);
+        movieReservationRepository.save(createdReservation);
+        reservationSeatList.forEach(rs -> rs.setReservation(createdReservation));
 
-        movieReservationRepository.save(movieReservation);
-
-        reservationSeatList.forEach(rs -> rs.setReservation(movieReservation));
-
-        return MovieReservationDetail.from(movieReservation);
+        return MovieReservationDetail.from(createdReservation);
     }
 
+    // TODO
     public MovieReservationDetail confirmReservation(Long reservationId) {
         Member member = authService.getMemberReference();
 
         MovieReservation movieReservation = movieReservationRepository.findById(reservationId)
-                .orElseThrow(() -> { throw new NoSuchElementException(); });
+                .orElseThrow(() -> { throw new TargetNotFoundException(); });
 
         if (!member.getId().equals(movieReservation.getMember().getId())) {
             throw new AccessDeniedException("access denied");
@@ -103,5 +96,21 @@ public class MovieReservationService {
 
                     return movieReservationSummary;
                 });
+    }
+
+    public MovieReservationDetail getReservationDetail(Long reservationId) {
+        Long memberId = authService.getMemberId();
+
+        MovieReservation findReservation = movieReservationRepository.findDetailById(reservationId)
+                .orElseThrow(() -> { throw new TargetNotFoundException("존재하지 않는 티켓 정보입니다."); });
+
+        if (!memberId.equals(findReservation.getMember().getId())) {
+            throw new AccessDeniedException("잘못된 접근입니다.");
+        }
+
+        MovieReservationDetail movieReservationDetail = MovieReservationDetail.from(findReservation);
+        movieReservationDetail.addPaymentSummary(findReservation.getPayment());
+
+        return movieReservationDetail;
     }
 }

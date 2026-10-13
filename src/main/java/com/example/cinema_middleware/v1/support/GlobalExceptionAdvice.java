@@ -4,6 +4,7 @@ package com.example.cinema_middleware.v1.support;
 import com.example.cinema_middleware.v1.controller.response.ResponseCode;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.support.exception.InvalidAccessTokenException;
+import com.example.cinema_middleware.v1.support.exception.TargetNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -12,16 +13,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.util.List;
+
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionAdvice {
+
 
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     @ExceptionHandler(value = AccessDeniedException.class)
@@ -29,7 +34,7 @@ public class GlobalExceptionAdvice {
         log.error("[ex handler] ex", e);
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(Result.of(ResponseCode.UNAUTHORIZED.getCode(), "잘못된 접근 권합입니다.", null));
+                .body(Result.of(ResponseCode.UNAUTHORIZED.getCode(), "잘못된 접근입니다.", null));
     }
 
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
@@ -60,22 +65,24 @@ public class GlobalExceptionAdvice {
     }
 
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    @ExceptionHandler(value = NoResourceFoundException.class)
-    public ResponseEntity<Result<Void>> noResourceFoundExceptionHandler(NoResourceFoundException e) {
+    @ExceptionHandler(value = TargetNotFoundException.class)
+    public ResponseEntity<Result<Void>> targetNotFoundExceptionHandler(TargetNotFoundException e) {
         log.error("[ex handler] ex", e);
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(Result.of(ResponseCode.NOT_FOUND.getCode(), "Resource is not exist", null));
+                .body(Result.of(ResponseCode.NOT_FOUND.getCode(), "대상을 찾을 수 없습니다.", null));
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     public ResponseEntity<Result<Void>> invalidArgumentExceptionHandler(MethodArgumentNotValidException e) {
         log.error("[ex handler] ex", e);
-        String firstMessage = e.getBindingResult().getAllErrors().getFirst().getDefaultMessage();
+        StringBuilder defaultMsg = new StringBuilder();
+        List<ObjectError> allErrors = e.getBindingResult().getAllErrors();
+        if (allErrors.size() > 0) defaultMsg.append(allErrors.getFirst().getDefaultMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(Result.of(ResponseCode.INVALID_ARGUMENT.getCode(), firstMessage, null));
+                .body(Result.of(ResponseCode.INVALID_ARGUMENT.getCode(), defaultMsg.toString(), null));
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
