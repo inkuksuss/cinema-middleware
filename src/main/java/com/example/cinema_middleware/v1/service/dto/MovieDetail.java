@@ -1,5 +1,6 @@
 package com.example.cinema_middleware.v1.service.dto;
 
+import com.example.cinema_middleware.v1.domain.entity.FileMaster;
 import com.example.cinema_middleware.v1.domain.entity.Movie;
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieCategory;
 import lombok.Getter;
@@ -7,8 +8,10 @@ import lombok.Setter;
 import lombok.ToString;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
-@Getter @Setter
+@Getter
 @ToString
 public class MovieDetail {
 
@@ -34,6 +37,8 @@ public class MovieDetail {
 
     private MovieCategory category;
 
+    private List<FileSummary> fileList = new ArrayList<>();
+
     public static MovieDetail from(Movie movie) {
         MovieDetail movieDetail = new MovieDetail();
         movieDetail.id = movie.getId();
@@ -44,10 +49,13 @@ public class MovieDetail {
         movieDetail.ageRating = movie.getAgeRating();
         movieDetail.releaseDate = movie.getReleaseDate();
         movieDetail.closeDate = movie.getCloseDate();
-        movieDetail.posterUrl = movie.getPosterUrl();
         movieDetail.viewCount = movie.getViewCount();
         movieDetail.category = movie.getCategory();
 
         return movieDetail;
+    }
+
+    public void addFileSummary(FileMaster fileMaster) {
+        fileList.add(FileSummary.from(fileMaster));
     }
 }

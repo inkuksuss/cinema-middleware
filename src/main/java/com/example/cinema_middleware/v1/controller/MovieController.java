@@ -22,7 +22,7 @@ public class MovieController {
     private final MovieService movieService;
 
     @GetMapping("/summary")
-    public ResponseEntity<Result<Page<MovieSummary>>> getSummary(@PageableDefault(sort = "created", direction = Sort.Direction.DESC, size = 7) Pageable pageable) {
+    public ResponseEntity<Result<Page<MovieSummary>>> getSummary(@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 7) Pageable pageable) {
         //TODO
         // front 페이지는 1번 시작이지만, 조회는 0번부터 시작
         Page<MovieSummary> result = movieService.getMovieSummaryPage(pageable);

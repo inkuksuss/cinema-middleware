@@ -1,7 +1,6 @@
 package com.example.cinema_middleware.v1.repository;
 
 import com.example.cinema_middleware.v1.domain.entity.MovieReservation;
-import com.example.cinema_middleware.v1.support.PageUtils;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -14,6 +13,7 @@ import java.util.List;
 import static com.example.cinema_middleware.v1.domain.entity.QMovie.*;
 import static com.example.cinema_middleware.v1.domain.entity.QMovieReservation.*;
 import static com.example.cinema_middleware.v1.domain.entity.QScreening.*;
+import static com.example.cinema_middleware.v1.support.QueryDslUtils.createSlice;
 
 public class MovieReservationRepositoryImpl implements MovieReservationRepositoryQuery {
 
@@ -35,9 +35,9 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
                         movieReservation.member.id.eq(memberId),
                         reservationStatusEq(status)
                 )
-                .orderBy(movieReservation.createdAt.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
+                .orderBy(movieReservation.createdAt.desc())
                 .fetch();
 
         Long count = queryFactory
@@ -64,12 +64,12 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
                         movieReservation.member.id.eq(memberId),
                         reservationStatusEq(status)
                 )
-                .orderBy(movieReservation.createdAt.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize() + 1)
+                .orderBy(movieReservation.createdAt.desc())
                 .fetch();
 
-        return PageUtils.createSlice(content, pageable);
+        return createSlice(content, pageable);
     }
 
     private BooleanExpression reservationStatusEq(ReservationStatus status) {

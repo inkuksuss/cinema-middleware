@@ -1,10 +1,9 @@
 package com.example.cinema_middleware.v1.service.dto;
 
 import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 
-@Getter @Setter
+@Getter
 @ToString
 public class TokenIssuance {
 
@@ -15,4 +14,14 @@ public class TokenIssuance {
     private String tokenType;
 
     private long expiredTime;
+
+    public static TokenIssuance of(String accessToken, String refreshToken, String tokenType, long expiredTime) {
+        TokenIssuance tokenIssuance = new TokenIssuance();
+        tokenIssuance.accessToken = accessToken;
+        tokenIssuance.refreshToken = refreshToken;
+        tokenIssuance.tokenType = tokenType;
+        tokenIssuance.expiredTime = expiredTime;
+
+        return tokenIssuance;
+    }
 }

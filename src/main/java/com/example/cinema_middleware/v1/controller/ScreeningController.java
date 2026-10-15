@@ -34,7 +34,7 @@ public class ScreeningController {
 
     @GetMapping("/{screeningId}/seat")
     public ResponseEntity<Result<SeatMapper>> getScreeningSeat(@PathVariable Long screeningId) {
-        SeatMapper seatMapper = screeningService.getScreeningSeat(screeningId);
+        SeatMapper seatMapper = screeningService.getScreeningSeatForReservation(screeningId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)

@@ -1,6 +1,7 @@
 package com.example.cinema_middleware.v1.domain.entity;
 
 import com.example.cinema_middleware.v1.domain.entity.base.SimpleBaseEntity;
+import com.example.cinema_middleware.v1.domain.entity.enums.YesOrNo;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -18,7 +19,7 @@ import org.hibernate.annotations.SQLRestriction;
 )
 @SQLRestriction("is_delete = 'N'")
 @SQLDelete(sql = "UPDATE movie_reservation_seat SET is_delete = 'Y' WHERE movie_reservation_seat_id = ?")
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
 public class MovieReservationSeat extends SimpleBaseEntity {
 
@@ -38,9 +39,12 @@ public class MovieReservationSeat extends SimpleBaseEntity {
     @JoinColumn(name = "theater_seat_id")
     private TheaterSeat theaterSeat;
 
-    private String isActive = "Y";
+    @Enumerated(EnumType.STRING)
+    @Column(length = 1)
+    private YesOrNo isActive = YesOrNo.Y;
 
-    public static MovieReservationSeat of(MovieReservation reservation, Screening screening, TheaterSeat theaterSeat) {
+    public static MovieReservationSeat create(MovieReservation reservation, Screening screening, TheaterSeat theaterSeat) {
+        if (reservation == null || screening == null || theaterSeat == null) throw new IllegalStateException();
         MovieReservationSeat movieReservationSeat = new MovieReservationSeat();
         movieReservationSeat.reservation = reservation;
         movieReservationSeat.screening = screening;

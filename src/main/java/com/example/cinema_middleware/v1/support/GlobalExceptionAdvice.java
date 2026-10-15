@@ -3,9 +3,12 @@ package com.example.cinema_middleware.v1.support;
 
 import com.example.cinema_middleware.v1.controller.response.ResponseCode;
 import com.example.cinema_middleware.v1.controller.response.Result;
+import com.example.cinema_middleware.v1.support.exception.DuplicateValueException;
+import com.example.cinema_middleware.v1.support.exception.FileSaveFailedException;
 import com.example.cinema_middleware.v1.support.exception.InvalidAccessTokenException;
 import com.example.cinema_middleware.v1.support.exception.TargetNotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.ObjectNotFoundException;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -13,12 +16,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
 
@@ -61,7 +65,7 @@ public class GlobalExceptionAdvice {
         log.error("[ex handler] ex", e);
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(Result.of(ResponseCode.ILLEGAL_STATE.getCode(), "Illegal authentication", null));
+                .body(Result.of(ResponseCode.ILLEGAL_STATE.getCode(), "인증에 실패하였습니다.", null));
     }
 
     @ResponseStatus(HttpStatus.NOT_FOUND)
@@ -73,16 +77,61 @@ public class GlobalExceptionAdvice {
                 .body(Result.of(ResponseCode.NOT_FOUND.getCode(), "대상을 찾을 수 없습니다.", null));
     }
 
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @ExceptionHandler(value = DuplicateValueException.class)
+    public ResponseEntity<Result<Void>> duplicateValueExceptionHandler(DuplicateValueException e) {
+        log.error("[ex handler] ex", e);
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Result.of(ResponseCode.DUPLICATE_VALUE.getCode(), e.getMessage(), null));
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = ObjectNotFoundException.class)
+    public ResponseEntity<Result<Void>> objectNotFoundExceptionHandler(ObjectNotFoundException e) {
+        log.error("[ex handler] ex", e);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Result.of(ResponseCode.NOT_FOUND.getCode(), e.getMessage(), null));
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = FileSaveFailedException.class)
+    public ResponseEntity<Result<Void>> fileSaveFailedExceptionHandler(FileSaveFailedException e) {
+        log.error("[ex handler] ex", e);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Result.of(ResponseCode.INVALID_FILE.getCode(), e.getMessage(), null));
+    }
+
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     public ResponseEntity<Result<Void>> invalidArgumentExceptionHandler(MethodArgumentNotValidException e) {
         log.error("[ex handler] ex", e);
-        StringBuilder defaultMsg = new StringBuilder();
         List<ObjectError> allErrors = e.getBindingResult().getAllErrors();
-        if (allErrors.size() > 0) defaultMsg.append(allErrors.getFirst().getDefaultMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(Result.of(ResponseCode.INVALID_ARGUMENT.getCode(), defaultMsg.toString(), null));
+                .body(Result.of(ResponseCode.INVALID_ARGUMENT.getCode(), allErrors.size() > 0
+                        ? allErrors.getFirst().getDefaultMessage() :
+                        "잘못된 요청 파라미터입니다.", null));
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Result<Void>> methodArgumentTypeMismatchExceptionHandler(MethodArgumentTypeMismatchException e) {
+        log.error("[ex handler] ex", e);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Result.of(ResponseCode.INVALID_ARGUMENT.getCode(), "잘못된 요청 파라미터입니다.", null));
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = HttpMessageNotReadableException.class)
+    public ResponseEntity<Result<Void>> httpMessageNotReadableExceptionHandler(HttpMessageNotReadableException e) {
+        log.error("[ex handler] ex", e);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Result.of(ResponseCode.INVALID_ARGUMENT.getCode(), "잘못된 요청 파라미터입니다.", null));
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)

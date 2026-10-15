@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 @Entity
 @SQLRestriction("is_delete = 'N'")
 @SQLDelete(sql = "UPDATE movie_reservation SET is_delete = 'Y' WHERE movie_reservation_id = ?")
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
 public class MovieReservation extends BaseEntity {
 
@@ -69,10 +69,11 @@ public class MovieReservation extends BaseEntity {
         movieReservation.member = member;
         movieReservation.screening = screening;
         movieReservation.code = UUID.randomUUID().toString();
-        movieReservation.seatNames = seatDataList.stream().map(s -> s.getSeatRow() + s.getSeatColumn()).collect(Collectors.joining(", "));
-        movieReservation.totalPrice = seatDataList.stream().map(SeatData::getPrice).reduce(BigDecimal.ZERO, BigDecimal::add);
         movieReservation.status = ReservationStatus.PENDING;
         movieReservation.expiredAt = LocalDateTime.now().plusHours(1);
+        if (seatDataList == null) throw new IllegalStateException("예약에 지정된 좌석이 없습니다.");
+        movieReservation.seatNames = seatDataList.stream().map(s -> s.getSeatRow() + s.getSeatColumn()).collect(Collectors.joining(", "));
+        movieReservation.totalPrice = seatDataList.stream().map(SeatData::getPrice).reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return movieReservation;
     }
@@ -99,5 +100,17 @@ public class MovieReservation extends BaseEntity {
 
     private void issueCode() {
         this.code = UUID.randomUUID().toString();
+    }
+
+    public void setStatus(ReservationStatus status) {
+        this.status = status;
+    }
+
+    public void setExpiredAt(LocalDateTime expiredAt) {
+        this.expiredAt = expiredAt;
+    }
+
+    public void setCanceledAt(LocalDateTime canceledAt) {
+        this.canceledAt = canceledAt;
     }
 }

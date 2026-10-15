@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./**/dist/**)",
+      "Read(./**/build/**)",
+      "Read(./**/*.generated.*)"
+    ]
+  },
+  "enabledPlugins": {
+    "context7@claude-plugins-official": true
+  },
+  "enabledMcpjsonServers": [
+    "sequential-thinking",
+    "shrimp-task-manager"
+  ]
+}

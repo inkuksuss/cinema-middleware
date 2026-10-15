@@ -42,14 +42,21 @@ class ScreeningServiceTest {
     void getScreeningSummaryByDate() {
         //given
         LocalDateTime now = LocalDateTime.now();
-        Theater theater = new Theater("상영관1", "");
+        Theater theater = Theater.create("상영관1", "");
         theaterRepository.save(theater);
-        Movie movie = new Movie("movie", "sum", 120, "19", now.toLocalDate(), now.plusDays(7).toLocalDate(), MovieCategory.THRILLER);
+        Movie movie = new Movie();
+        movie.setTitle("hello");
+        movie.setSummary("aa");
+        movie.setRunningTime(120);
+        movie.setAgeRating("19");
+        movie.setReleaseDate(now.toLocalDate());
+        movie.setCloseDate(now.toLocalDate().plusDays(7));
+        movie.setCategory(MovieCategory.ROMANCE);
         movieRepository.save(movie);
 
         List<Screening> list = new ArrayList<>();
         for (int i = 0; i < 15; i++) {
-            list.add(Screening.of(movie, theater, now.toLocalDate(), LocalTime.of(i, 0), ScreeningStatus.ON_SALE));
+            list.add(Screening.create(movie, theater, now.toLocalDate(), LocalTime.of(i, 0), ScreeningStatus.ON_SALE));
         }
         screeningRepository.saveAll(list);
 

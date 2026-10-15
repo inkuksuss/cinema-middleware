@@ -2,10 +2,9 @@ package com.example.cinema_middleware.v1.service.dto;
 
 import com.example.cinema_middleware.v1.domain.entity.Theater;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 
-@Getter @Setter
+@Getter
 @ToString
 public class TheaterSummary {
 

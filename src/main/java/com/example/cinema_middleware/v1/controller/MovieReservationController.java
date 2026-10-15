@@ -94,7 +94,7 @@ public class MovieReservationController {
 
     @GetMapping("/my")
     public ResponseEntity<Result<Page<MovieReservationSummary>>> getMyReservation(
-            @PageableDefault(sort = "created", direction = Sort.Direction.DESC, size = 7) Pageable pageable,
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 7) Pageable pageable,
             @RequestParam(required = false) ReservationStatus status
     ) {
         Page<MovieReservationSummary> result =

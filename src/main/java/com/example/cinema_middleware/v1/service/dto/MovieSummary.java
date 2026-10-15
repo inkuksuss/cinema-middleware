@@ -1,14 +1,14 @@
 package com.example.cinema_middleware.v1.service.dto;
 
+import com.example.cinema_middleware.v1.domain.entity.FileMaster;
 import com.example.cinema_middleware.v1.domain.entity.Movie;
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieCategory;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 
 import java.time.LocalDate;
 
-@Getter @Setter
+@Getter
 @ToString
 public class MovieSummary {
 
@@ -24,11 +24,11 @@ public class MovieSummary {
 
     private LocalDate releaseDate;
 
-    private String posterUrl;
-
     private Long viewCount;
 
     private MovieCategory category;
+
+    private FileSummary thumbnail;
 
     public static MovieSummary from(Movie movie) {
         MovieSummary movieSummary = new MovieSummary();
@@ -38,10 +38,13 @@ public class MovieSummary {
         movieSummary.runningTime = movie.getRunningTime();
         movieSummary.ageRating = movie.getAgeRating();
         movieSummary.releaseDate = movie.getReleaseDate();
-        movieSummary.posterUrl = movie.getPosterUrl();
         movieSummary.viewCount = movie.getViewCount();
         movieSummary.category = movie.getCategory();
 
         return movieSummary;
+    }
+
+    public void addFileSummary(FileMaster fileMaster) {
+        this.thumbnail = FileSummary.from(fileMaster);
     }
 }

@@ -10,7 +10,6 @@ import com.example.cinema_middleware.v1.repository.ScreeningRepository;
 import com.example.cinema_middleware.v1.repository.TheaterSeatRepository;
 import com.example.cinema_middleware.v1.repository.dto.SeatData;
 import com.example.cinema_middleware.v1.service.dto.MovieReservationDetail;
-import com.example.cinema_middleware.v1.service.dto.PaymentSummary;
 import com.example.cinema_middleware.v1.support.exception.ScreeningNotOnSaleException;
 import com.example.cinema_middleware.v1.support.exception.SeatAlreadyTakenException;
 import com.example.cinema_middleware.v1.support.exception.TargetNotFoundException;
@@ -52,7 +51,7 @@ public class MovieReservationService {
 
         List<MovieReservationSeat> reservationSeatList = theaterSeatIdList.stream()
                 .map(theaterSeatRepository::getReferenceById)
-                .map(seatRef -> MovieReservationSeat.of(null, screeningRef, seatRef))
+                .map(seatRef -> MovieReservationSeat.create(null, screeningRef, seatRef))
                 .toList();
 
         try {

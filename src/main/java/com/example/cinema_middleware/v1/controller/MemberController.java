@@ -22,14 +22,7 @@ public class MemberController {
 
     @PostMapping("/sign-up")
     public ResponseEntity<Result<Long>> signUp(@RequestBody @Validated SignUpRequest request) {
-        AddMemberForm addMemberForm = new AddMemberForm();
-        addMemberForm.setEmail(request.email());
-        addMemberForm.setUsername(request.username());
-        addMemberForm.setPassword(request.password());
-        addMemberForm.setPhoneNumber(request.phoneNumber());
-        addMemberForm.setBirthday(request.birthday());
-
-        memberService.addMember(addMemberForm);
+        memberService.addMember(AddMemberForm.from(request));
 
         return ResponseEntity
                 .status(HttpStatus.OK)

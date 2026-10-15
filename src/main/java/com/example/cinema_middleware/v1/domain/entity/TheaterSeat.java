@@ -16,7 +16,7 @@ import java.util.List;
 @Entity
 @SQLRestriction("is_delete = 'N'")
 @SQLDelete(sql = "UPDATE theater_seat SET is_delete = 'Y' WHERE theater_seat_id = ?")
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
 public class TheaterSeat extends BaseEntity {
 
@@ -44,7 +44,7 @@ public class TheaterSeat extends BaseEntity {
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal price;
 
-    public static TheaterSeat of(Theater theater, String seatRow, String seatColumn, SeatGrade grade) {
+    public static TheaterSeat create(Theater theater, String seatRow, String seatColumn, SeatGrade grade) {
         TheaterSeat theaterSeat = new TheaterSeat();
         theaterSeat.theater = theater;
         theaterSeat.seatRow = seatRow;

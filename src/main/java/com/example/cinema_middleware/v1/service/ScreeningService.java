@@ -42,8 +42,8 @@ public class ScreeningService {
                 .toList();
     }
 
-    public SeatMapper getScreeningSeat(Long screeningId) {
-        List<ScreeningSeat> screeningSeatList = screeningRepository.findAllSeatByScreeningId(screeningId);
+    public SeatMapper getScreeningSeatForReservation(Long screeningId) {
+        List<ScreeningSeat> screeningSeatList = screeningRepository.findAllSeatForReservationById(screeningId);
 
         if (screeningSeatList.size() == 0) {
             throw new IllegalStateException("좌석 정보가 존재하지 않습니다.");

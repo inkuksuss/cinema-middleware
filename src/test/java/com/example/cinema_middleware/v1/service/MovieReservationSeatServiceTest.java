@@ -5,6 +5,7 @@ import com.example.cinema_middleware.v1.domain.entity.enums.MovieCategory;
 import com.example.cinema_middleware.v1.domain.entity.enums.ScreeningStatus;
 import com.example.cinema_middleware.v1.domain.entity.enums.SeatGrade;
 import com.example.cinema_middleware.v1.repository.*;
+import com.example.cinema_middleware.v1.repository.dto.SeatData;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
@@ -61,7 +62,7 @@ class MovieReservationSeatServiceTest {
     void addReservationSeatCheckDuplicate() {
         //given
         LocalDate now = LocalDate.now();
-        Member member = Member.of(
+        Member member = Member.create(
                 "ad@naver.com",
                 "hello",
                 "123",
@@ -69,15 +70,22 @@ class MovieReservationSeatServiceTest {
                 "20111111"
         );
         Member savedMember = memberRepository.save(member);
-        Theater theater = new Theater("theater1", "desc");
+        Theater theater = Theater.create("theater1", "desc");
         Theater savedTheater = theaterRepository.save(theater);
-        Movie movie = new Movie("hello", "aa", 120, "19", now, now.plusDays(7), MovieCategory.ROMANCE);
+        Movie movie = new Movie();
+        movie.setTitle("hello");
+        movie.setSummary("aa");
+        movie.setRunningTime(120);
+        movie.setAgeRating("19");
+        movie.setReleaseDate(now);
+        movie.setCloseDate(now.plusDays(7));
+        movie.setCategory(MovieCategory.ROMANCE);
         Movie savedMovie = movieRepository.save(movie);
-        Screening screening = Screening.of(savedMovie, savedTheater, now, LocalTime.MIN, ScreeningStatus.ON_SALE);
+        Screening screening = Screening.create(savedMovie, savedTheater, now, LocalTime.MIN, ScreeningStatus.ON_SALE);
         Screening savedScreening = screeningRepository.save(screening);
-        MovieReservation movieReservation = MovieReservation.create(savedMember, savedScreening, List.of(BigDecimal.valueOf(10000)));
+        MovieReservation movieReservation = MovieReservation.create(savedMember, savedScreening, List.of());
         MovieReservation savedReservation = movieReservationRepository.save(movieReservation);
-        TheaterSeat theaterSeat = TheaterSeat.of(savedTheater, "1", "a", SeatGrade.NORMAL);
+        TheaterSeat theaterSeat = TheaterSeat.create(savedTheater, "1", "a", SeatGrade.NORMAL);
         TheaterSeat savedTheaterSeat = theaterSeatRepository.save(theaterSeat);
 
         ExecutorService es = Executors.newFixedThreadPool(10);
@@ -89,7 +97,7 @@ class MovieReservationSeatServiceTest {
         for (int i = 0; i < 10; i++) {
             es.submit(() -> {
                 try {
-                    MovieReservationSeat movieReservationSeat = MovieReservationSeat.of(savedReservation, savedScreening, savedTheaterSeat);
+                    MovieReservationSeat movieReservationSeat = MovieReservationSeat.create(savedReservation, savedScreening, savedTheaterSeat);
                     startLatch.await();
                     movieReservationSeatRepository.save(movieReservationSeat);
                 }
@@ -123,7 +131,7 @@ class MovieReservationSeatServiceTest {
     void addReservationSeatCheckDuplicateNull() {
         //given
         LocalDate now = LocalDate.now();
-        Member member = Member.of(
+        Member member = Member.create(
                 "ad@naver.com",
                 "hello",
                 "123",
@@ -131,15 +139,22 @@ class MovieReservationSeatServiceTest {
                 "20111111"
         );
         Member savedMember = memberRepository.save(member);
-        Theater theater = new Theater("theater1", "desc");
+        Theater theater = Theater.create("theater1", "desc");
         Theater savedTheater = theaterRepository.save(theater);
-        Movie movie = new Movie("hello", "aa", 120, "19", now, now.plusDays(7), MovieCategory.ROMANCE);
+        Movie movie = new Movie();
+        movie.setTitle("hello");
+        movie.setSummary("aa");
+        movie.setRunningTime(120);
+        movie.setAgeRating("19");
+        movie.setReleaseDate(now);
+        movie.setCloseDate(now.plusDays(7));
+        movie.setCategory(MovieCategory.ROMANCE);
         Movie savedMovie = movieRepository.save(movie);
-        Screening screening = Screening.of(savedMovie, savedTheater, now, LocalTime.MIN, ScreeningStatus.ON_SALE);
+        Screening screening = Screening.create(savedMovie, savedTheater, now, LocalTime.MIN, ScreeningStatus.ON_SALE);
         Screening savedScreening = screeningRepository.save(screening);
-        MovieReservation movieReservation = MovieReservation.create(savedMember, savedScreening, List.of(BigDecimal.valueOf(40000)));
+        MovieReservation movieReservation = MovieReservation.create(savedMember, savedScreening, List.of());
         MovieReservation savedReservation = movieReservationRepository.save(movieReservation);
-        TheaterSeat theaterSeat = TheaterSeat.of(savedTheater, "1", "a", SeatGrade.NORMAL);
+        TheaterSeat theaterSeat = TheaterSeat.create(savedTheater, "1", "a", SeatGrade.NORMAL);
         TheaterSeat savedTheaterSeat = theaterSeatRepository.save(theaterSeat);
 
         ExecutorService es = Executors.newFixedThreadPool(10);
@@ -151,7 +166,7 @@ class MovieReservationSeatServiceTest {
         for (int i = 0; i < 10; i++) {
             es.submit(() -> {
                 try {
-                    MovieReservationSeat movieReservationSeat = MovieReservationSeat.of(savedReservation, savedScreening, savedTheaterSeat);
+                    MovieReservationSeat movieReservationSeat = MovieReservationSeat.create(savedReservation, savedScreening, savedTheaterSeat);
                     movieReservationSeat.giveUpSeat();
                     startLatch.await();
                     movieReservationSeatRepository.save(movieReservationSeat);

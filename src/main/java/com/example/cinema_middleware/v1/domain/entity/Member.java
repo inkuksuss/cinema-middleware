@@ -13,7 +13,7 @@ import org.hibernate.annotations.SQLRestriction;
 @Entity
 @SQLRestriction("is_delete = 'N'")
 @SQLDelete(sql = "UPDATE member SET is_delete = 'Y' WHERE member_id = ?")
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
 public class Member extends SimpleBaseEntity {
 
@@ -44,7 +44,7 @@ public class Member extends SimpleBaseEntity {
     @Column(nullable = false, length = 100)
     private SocialProvider socialProvider;
 
-    public static Member of(
+    public static Member create(
             String email,
             String username,
             String password,
@@ -66,17 +66,17 @@ public class Member extends SimpleBaseEntity {
     }
 
 
-    public static Member of(
+    public static Member create(
             String email,
             String username,
             String password,
             String phoneNumber,
             String birthday
     ) {
-        return of(email, username, password, phoneNumber, birthday, MemberGrade.ROLE_COMMON, SocialProvider.NORMAL);
+        return create(email, username, password, phoneNumber, birthday, MemberGrade.ROLE_COMMON, SocialProvider.NORMAL);
     }
 
-    public static Member of(
+    public static Member create(
             String email,
             String username,
             String password,
@@ -84,6 +84,6 @@ public class Member extends SimpleBaseEntity {
             String birthday,
             SocialProvider socialProvider
     ) {
-        return of(email, username, password, phoneNumber, birthday, MemberGrade.ROLE_COMMON, socialProvider);
+        return create(email, username, password, phoneNumber, birthday, MemberGrade.ROLE_COMMON, socialProvider);
     }
 }

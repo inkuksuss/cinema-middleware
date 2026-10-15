@@ -125,12 +125,10 @@ public class AuthService {
                 Duration.ofSeconds(jwtTokenProvider.getJwtProperties().refreshTokenExpireSeconds())
         );
 
-        TokenIssuance tokenIssuance = new TokenIssuance();
-        tokenIssuance.setAccessToken(accessToken);
-        tokenIssuance.setRefreshToken(refreshToken);
-        tokenIssuance.setTokenType(AuthorizationConst.PREFIX);
-        tokenIssuance.setExpiredTime(jwtTokenProvider.getJwtProperties().accessTokenExpireSeconds());
-
-        return tokenIssuance;
+        return TokenIssuance.of(
+                accessToken,
+                refreshToken,
+                AuthorizationConst.PREFIX,
+                jwtTokenProvider.getJwtProperties().accessTokenExpireSeconds());
     }
 }

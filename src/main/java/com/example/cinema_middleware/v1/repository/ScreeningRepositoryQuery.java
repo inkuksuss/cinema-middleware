@@ -16,7 +16,7 @@ public interface ScreeningRepositoryQuery {
 
     List<SeatCount> findSeatCountListByIdList(@Param("screeningIdList") List<Long> screeningIdList);
 
-    List<ScreeningSeat> findAllSeatByScreeningId(@Param("screeningId") Long screeningId);
+    List<ScreeningSeat> findAllSeatForReservationById(@Param("screeningId") Long screeningId);
 
     List<SeatData> findSeatDataListFor(@Param("screeningId") Long screeningId, @Param("theaterSeatIdList") List<Long> theaterSeatIdList);
 }

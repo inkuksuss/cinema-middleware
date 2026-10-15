@@ -17,7 +17,7 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
 
     public void addMember(AddMemberForm addMemberForm) {
-        Member member = Member.of(
+        Member member = Member.create(
                 addMemberForm.getEmail(),
                 addMemberForm.getUsername(),
                 passwordEncoder.encode(addMemberForm.getPassword()),
@@ -25,18 +25,12 @@ public class MemberService {
                 addMemberForm.getBirthday()
         );
 
-        Member savedMember = memberRepository.save(member);
+        memberRepository.save(member);
     }
 
     public MemberDetail getMember(String accessToken) {
         Member findMember = authService.getMemberByAccessToken(accessToken);
 
-        MemberDetail memberDetail = new MemberDetail();
-        memberDetail.setId(findMember.getId());
-        memberDetail.setEmail(findMember.getEmail());
-        memberDetail.setUsername(findMember.getUsername());
-        memberDetail.setGrade(findMember.getGrade());
-
-        return memberDetail;
+        return MemberDetail.from(findMember);
     }
 }

@@ -4,14 +4,13 @@ import com.example.cinema_middleware.v1.domain.entity.Screening;
 import com.example.cinema_middleware.v1.domain.entity.enums.ScreeningStatus;
 import com.example.cinema_middleware.v1.repository.dto.SeatCount;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
-@Getter @Setter
+@Getter
 @ToString
 public class ScreeningSummary {
 
@@ -48,5 +47,13 @@ public class ScreeningSummary {
                 this.soldOutSeatCount = seatCount.getSoldOutSeatCount().intValue();
             }
         }
+    }
+
+    public void setMovieSummary(MovieSummary movieSummary) {
+        this.movieSummary = movieSummary;
+    }
+
+    public void setTheaterSummary(TheaterSummary theaterSummary) {
+        this.theaterSummary = theaterSummary;
     }
 }

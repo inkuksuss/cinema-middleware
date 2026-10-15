@@ -1,6 +1,7 @@
 package com.example.cinema_middleware.v1.repository;
 
 import com.example.cinema_middleware.v1.domain.entity.Screening;
+import com.example.cinema_middleware.v1.domain.entity.enums.YesOrNo;
 import com.example.cinema_middleware.v1.repository.dto.ScreeningSeat;
 import com.example.cinema_middleware.v1.repository.dto.SeatCount;
 import com.example.cinema_middleware.v1.repository.dto.SeatData;
@@ -60,7 +61,7 @@ public class ScreeningRepositoryImpl implements ScreeningRepositoryQuery {
                                 .from(movieReservationSeat)
                                 .where(
                                         movieReservationSeat.screening.id.eq(screening.id),
-                                        movieReservationSeat.isActive.eq("Y")
+                                        movieReservationSeat.isActive.eq(YesOrNo.Y)
                                 )
                 ))
                 .from(screening)
@@ -69,7 +70,7 @@ public class ScreeningRepositoryImpl implements ScreeningRepositoryQuery {
     }
 
     @Override
-    public List<ScreeningSeat> findAllSeatByScreeningId(@Param("screeningId") Long screeningId) {
+    public List<ScreeningSeat> findAllSeatForReservationById(@Param("screeningId") Long screeningId) {
         return queryFactory
                 .select(Projections.constructor(
                         ScreeningSeat.class,
@@ -87,7 +88,7 @@ public class ScreeningRepositoryImpl implements ScreeningRepositoryQuery {
                 .join(theaterSeat)
                 .on(theater.id.eq(theaterSeat.theater.id))
                 .leftJoin(movieReservationSeat)
-                .on(theaterSeat.id.eq(movieReservationSeat.theaterSeat.id), (movieReservationSeat.isActive.eq("Y")))
+                .on(theaterSeat.id.eq(movieReservationSeat.theaterSeat.id), (movieReservationSeat.isActive.eq(YesOrNo.Y)))
                 .where(screening.id.eq(screeningId))
                 .fetch();
     }
