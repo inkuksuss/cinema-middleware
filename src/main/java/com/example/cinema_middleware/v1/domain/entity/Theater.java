@@ -11,7 +11,7 @@ import org.hibernate.annotations.SQLRestriction;
 @Entity
 @SQLRestriction("is_delete = 'N'")
 @SQLDelete(sql = "UPDATE theater SET is_delete = 'Y' WHERE theater_id = ?")
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
 public class Theater extends BaseEntity {
 

@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Entity
 @SQLRestriction("is_delete = 'N'")
 @SQLDelete(sql = "UPDATE coupon_issuance SET is_delete = 'Y' WHERE coupon_issuance_id = ?")
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
 public class CouponIssuance extends SimpleBaseEntity {
 

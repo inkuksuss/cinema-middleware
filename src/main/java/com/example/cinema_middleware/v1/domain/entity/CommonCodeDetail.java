@@ -13,7 +13,7 @@ import org.hibernate.annotations.SQLRestriction;
 @Entity
 @Table(name = "common_code_detail")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 @SQLDelete(sql = "UPDATE common_code_detail SET is_delete = 'Y' WHERE common_code_group_id = ? AND common_code_detail_code = ?")
 @SQLRestriction("is_delete = 'N'")
 public class CommonCodeDetail extends BaseEntity {

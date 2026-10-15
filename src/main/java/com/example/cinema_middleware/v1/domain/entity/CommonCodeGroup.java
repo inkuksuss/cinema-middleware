@@ -19,7 +19,7 @@ import java.util.List;
 @Entity
 @Table(name = "common_code_group")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 @SQLDelete(sql = "UPDATE common_code_group SET is_delete = 'Y' WHERE common_code_group_id = ?")
 @SQLRestriction("is_delete = 'N'")
 public class CommonCodeGroup extends BaseEntity {

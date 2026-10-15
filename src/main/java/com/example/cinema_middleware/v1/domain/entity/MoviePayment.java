@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 @Entity
 @SQLRestriction("is_delete = 'N'")
 @SQLDelete(sql = "UPDATE movie_payment SET is_delete = 'Y' WHERE movie_payment_id = ?")
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
 public class MoviePayment extends BaseEntity {
 

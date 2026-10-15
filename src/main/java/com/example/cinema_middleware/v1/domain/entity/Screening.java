@@ -15,7 +15,7 @@ import java.time.LocalTime;
 @Entity
 @SQLRestriction("is_delete = 'N'")
 @SQLDelete(sql = "UPDATE screening SET is_delete = 'Y' WHERE screening_id = ?")
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
 public class Screening extends BaseEntity {
 
@@ -41,7 +41,7 @@ public class Screening extends BaseEntity {
     @Column(nullable = false, length = 100)
     private ScreeningStatus status;
 
-    public static Screening of(Movie movie, Theater theater, LocalDate startDate, LocalTime startAt, ScreeningStatus status) {
+    public static Screening create(Movie movie, Theater theater, LocalDate startDate, LocalTime startAt, ScreeningStatus status) {
         Screening screening = new Screening();
         screening.movie = movie;
         screening.theater = theater;

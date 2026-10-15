@@ -1,8 +1,7 @@
 package com.example.cinema_middleware.v1.domain.entity.base;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.MappedSuperclass;
+import com.example.cinema_middleware.v1.domain.entity.enums.YesOrNo;
+import jakarta.persistence.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -21,9 +20,9 @@ public class SimpleBaseEntity {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    @ColumnDefault("'N'")
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 1, columnDefinition = "CHAR(1)")
-    private String isDelete = "N";
+    private YesOrNo isDelete = YesOrNo.N;
 
     public void initCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;

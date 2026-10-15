@@ -1,8 +1,7 @@
 package com.example.cinema_middleware.v1.domain.entity.base;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.MappedSuperclass;
+import com.example.cinema_middleware.v1.domain.entity.enums.YesOrNo;
+import jakarta.persistence.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -25,14 +24,14 @@ public class BaseEntity {
 
     @CreatedBy
     @Column(updatable = false)
-    private String createdBy;
+    private Long createdBy;
 
     @LastModifiedBy
-    private String updatedBy;
+    private Long updatedBy;
 
-    @ColumnDefault("'N'")
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 1, columnDefinition = "CHAR(1)")
-    private String isDelete = "N";
+    private YesOrNo isDelete = YesOrNo.N;
 
     public void initCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
@@ -42,11 +41,11 @@ public class BaseEntity {
         this.updatedAt = updatedAt;
     }
 
-    public void initCreatedBy(String createdBy) {
+    public void initCreatedBy(Long createdBy) {
         this.createdBy = createdBy;
     }
 
-    public void changeUpdatedBy(String updatedBy) {
+    public void changeUpdatedBy(Long updatedBy) {
         this.updatedBy = updatedBy;
     }
 }
