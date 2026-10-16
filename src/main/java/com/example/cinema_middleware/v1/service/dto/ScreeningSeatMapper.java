@@ -5,6 +5,7 @@ import com.example.cinema_middleware.v1.domain.entity.enums.YesOrNo;
 import com.example.cinema_middleware.v1.repository.dto.ScreeningSeat;
 import lombok.Getter;
 import lombok.ToString;
+import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -12,14 +13,16 @@ import java.util.List;
 
 @Getter
 @ToString
-public class SeatMapper {
+public class ScreeningSeatMapper {
 
     private Long screeningId;
 
     private List<UserSeat> seatList = new ArrayList<>();
 
-    public static SeatMapper from(List<ScreeningSeat> screeningSeatList) {
-        SeatMapper seatMapper = new SeatMapper();
+    public static ScreeningSeatMapper from(List<ScreeningSeat> screeningSeatList) {
+        Assert.notNull(screeningSeatList, "screeningSeatList can not be null");
+
+        ScreeningSeatMapper seatMapper = new ScreeningSeatMapper();
         seatMapper.screeningId = screeningSeatList.getFirst().getScreeningId();
 
         for (ScreeningSeat screeningSeat : screeningSeatList) {

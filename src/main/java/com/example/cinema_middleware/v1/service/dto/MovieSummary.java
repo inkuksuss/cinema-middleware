@@ -5,6 +5,7 @@ import com.example.cinema_middleware.v1.domain.entity.Movie;
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieCategory;
 import lombok.Getter;
 import lombok.ToString;
+import org.springframework.util.Assert;
 
 import java.time.LocalDate;
 
@@ -31,6 +32,8 @@ public class MovieSummary {
     private FileSummary thumbnail;
 
     public static MovieSummary from(Movie movie) {
+        Assert.notNull(movie, "movie can not be null");
+
         MovieSummary movieSummary = new MovieSummary();
         movieSummary.id = movie.getId();
         movieSummary.title = movie.getTitle();

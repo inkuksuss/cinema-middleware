@@ -4,6 +4,7 @@ import com.example.cinema_middleware.v1.domain.entity.Member;
 import com.example.cinema_middleware.v1.domain.entity.enums.MemberGrade;
 import lombok.Getter;
 import lombok.ToString;
+import org.springframework.util.Assert;
 
 @Getter
 @ToString
@@ -18,6 +19,8 @@ public class MemberDetail {
     private MemberGrade grade;
 
     public static MemberDetail from(Member member) {
+        Assert.notNull(member, "member can not be null");
+
         MemberDetail memberDetail = new MemberDetail();
         memberDetail.id = member.getId();
         memberDetail.email = member.getEmail();
