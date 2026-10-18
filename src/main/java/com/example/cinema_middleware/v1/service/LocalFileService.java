@@ -36,7 +36,13 @@ public class LocalFileService implements FileService {
             File dest = new File(UPLOAD_DIR + newFileName);
             form.getFile().transferTo(dest);
 
-            FileMaster savedFile = fileRepository.save(FileMaster.create(form, dest));
+            FileMaster savedFile = fileRepository.save(FileMaster.create(
+                    form.getTargetId(),
+                    form.getTargetType(),
+                    form.getUsageType(),
+                    dest.getAbsolutePath(),
+                    form.getFile()
+            ));
 
             return savedFile.getDestination();
 
