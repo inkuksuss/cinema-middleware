@@ -54,7 +54,10 @@ public class AdminMovieController {
             @RequestPart MultipartFile file,
             @RequestPart @Validated CreateMovieRequest request
     ) {
-        movieService.addMovie(AddMovieForm.from(request, file));
+        AddMovieForm form = request.toForm();
+        form.setThumbnail(file);
+
+        movieService.addMovie(form);
 
         return ResponseEntity
                 .ok()
@@ -66,7 +69,10 @@ public class AdminMovieController {
             @PathVariable Long movieId,
             @RequestBody @Validated ModifyMovieRequest request
     ) {
-        movieService.update(UpdateMovieForm.from(movieId, request));
+        UpdateMovieForm form = request.toForm();
+        form.setMovieId(movieId);
+
+        movieService.update(form);
 
         return ResponseEntity
                 .ok()

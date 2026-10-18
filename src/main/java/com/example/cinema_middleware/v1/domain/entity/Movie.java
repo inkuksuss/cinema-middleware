@@ -1,15 +1,16 @@
 package com.example.cinema_middleware.v1.domain.entity;
 
 import com.example.cinema_middleware.v1.domain.entity.base.BaseEntity;
+import com.example.cinema_middleware.v1.domain.entity.enums.MovieAgeRating;
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieCategory;
 import com.example.cinema_middleware.v1.domain.entity.enums.YesOrNo;
-import com.example.cinema_middleware.v1.service.dto.AddMovieForm;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.springframework.util.Assert;
 
 import java.time.LocalDate;
 
@@ -36,8 +37,9 @@ public class Movie extends BaseEntity {
     @Column(nullable = false, length = 100)
     private Integer runningTime;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 100)
-    private String ageRating;
+    private MovieAgeRating ageRating;
 
     @Column(nullable = false)
     private LocalDate releaseDate;
@@ -58,17 +60,36 @@ public class Movie extends BaseEntity {
     @Column(nullable = false, length = 100)
     private MovieCategory category;
 
-    public static Movie create(AddMovieForm form) {
-        if (form == null) throw new IllegalStateException();
+    public static Movie create(
+            String title,
+            String summary,
+            String description,
+            Integer runningTime,
+            MovieAgeRating ageRating,
+            LocalDate releaseDate,
+            LocalDate closeDate,
+            YesOrNo isActive,
+            MovieCategory category
+    ) {
+        Assert.hasText(title, "title can not be null");
+        Assert.hasText(summary, "summary can not be null");
+        Assert.notNull(runningTime, "runningTime can not be null");
+        Assert.notNull(ageRating, "ageRating can not be null");
+        Assert.notNull(releaseDate, "releaseDate can not be null");
+        Assert.notNull(closeDate, "closeDate can not be null");
+        Assert.notNull(isActive, "isActive can not be null");
+        Assert.notNull(category, "category can not be null");
+
         Movie movie = new Movie();
-        movie.title = form.getTitle();
-        movie.summary = form.getSummary();
-        movie.description = form.getDescription();
-        movie.runningTime = form.getRunningTime();
-        movie.ageRating = form.getAgeRating();
-        movie.releaseDate = form.getReleaseDate();
-        movie.closeDate = form.getCloseDate();
-        movie.isActive = form.getIsActive();
+        movie.title = title;
+        movie.summary = summary;
+        movie.description = description;
+        movie.runningTime = runningTime;
+        movie.ageRating = ageRating;
+        movie.releaseDate = releaseDate;
+        movie.closeDate = closeDate;
+        movie.isActive = isActive;
+        movie.category = category;
 
         return movie;
     }
@@ -89,7 +110,7 @@ public class Movie extends BaseEntity {
         this.runningTime = runningTime;
     }
 
-    public void setAgeRating(String ageRating) {
+    public void setAgeRating(MovieAgeRating ageRating) {
         this.ageRating = ageRating;
     }
 

@@ -1,5 +1,6 @@
 package com.example.cinema_middleware.v1.service.dto;
 
+import com.example.cinema_middleware.v1.domain.entity.enums.MovieAgeRating;
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieCategory;
 import com.example.cinema_middleware.v1.domain.entity.enums.YesOrNo;
 import lombok.Getter;
@@ -21,7 +22,7 @@ public class AddMovieForm {
 
     private Integer runningTime;
 
-    private String ageRating;
+    private MovieAgeRating ageRating;
 
     private LocalDate releaseDate;
 

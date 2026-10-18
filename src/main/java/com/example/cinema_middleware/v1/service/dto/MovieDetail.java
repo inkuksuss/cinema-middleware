@@ -2,10 +2,11 @@ package com.example.cinema_middleware.v1.service.dto;
 
 import com.example.cinema_middleware.v1.domain.entity.FileMaster;
 import com.example.cinema_middleware.v1.domain.entity.Movie;
+import com.example.cinema_middleware.v1.domain.entity.enums.MovieAgeRating;
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieCategory;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
+import org.springframework.util.Assert;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -25,7 +26,7 @@ public class MovieDetail {
 
     private Integer runningTime;
 
-    private String ageRating;
+    private MovieAgeRating ageRating;
 
     private LocalDate releaseDate;
 
@@ -40,6 +41,8 @@ public class MovieDetail {
     private List<FileSummary> fileList = new ArrayList<>();
 
     public static MovieDetail from(Movie movie) {
+        Assert.notNull(movie, "movie can not be null");
+
         MovieDetail movieDetail = new MovieDetail();
         movieDetail.id = movie.getId();
         movieDetail.title = movie.getTitle();

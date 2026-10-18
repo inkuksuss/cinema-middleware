@@ -1,15 +1,16 @@
 package com.example.cinema_middleware.v1.service.dto;
 
-import com.example.cinema_middleware.v1.domain.entity.FileMaster;
 import com.example.cinema_middleware.v1.domain.entity.Movie;
+import com.example.cinema_middleware.v1.domain.entity.enums.MovieAgeRating;
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieCategory;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import org.springframework.util.Assert;
 
 import java.time.LocalDate;
 
-@Getter
+@Getter @Setter
 @ToString
 public class MovieSummary {
 
@@ -21,7 +22,7 @@ public class MovieSummary {
 
     private Integer runningTime;
 
-    private String ageRating;
+    private MovieAgeRating ageRating;
 
     private LocalDate releaseDate;
 
@@ -29,7 +30,7 @@ public class MovieSummary {
 
     private MovieCategory category;
 
-    private FileSummary thumbnail;
+    private String posterUrl;
 
     public static MovieSummary from(Movie movie) {
         Assert.notNull(movie, "movie can not be null");
@@ -45,9 +46,5 @@ public class MovieSummary {
         movieSummary.category = movie.getCategory();
 
         return movieSummary;
-    }
-
-    public void addFileSummary(FileMaster fileMaster) {
-        this.thumbnail = FileSummary.from(fileMaster);
     }
 }

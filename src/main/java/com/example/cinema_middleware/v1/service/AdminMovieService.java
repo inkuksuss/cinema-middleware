@@ -42,7 +42,17 @@ public class AdminMovieService {
 
     @Transactional
     public void addMovie(AddMovieForm form) {
-        Movie savedMovie = movieRepository.save(Movie.create(form));
+        Movie savedMovie = movieRepository.save(Movie.create(
+                form.getTitle(),
+                form.getSummary(),
+                form.getDescription(),
+                form.getRunningTime(),
+                form.getAgeRating(),
+                form.getReleaseDate(),
+                form.getCloseDate(),
+                form.getIsActive(),
+                form.getCategory()
+        ));
 
         AddFileForm addFileForm = new AddFileForm(savedMovie.getId(), TableType.MOVIE, UsageType.THUMBNAIL, form.getThumbnail());
         String destination = fileService.append(addFileForm);
