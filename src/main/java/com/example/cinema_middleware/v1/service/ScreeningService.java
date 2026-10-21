@@ -6,11 +6,12 @@ import com.example.cinema_middleware.v1.repository.dto.ScreeningSeat;
 import com.example.cinema_middleware.v1.repository.dto.SeatCount;
 import com.example.cinema_middleware.v1.service.dto.MovieSummary;
 import com.example.cinema_middleware.v1.service.dto.ScreeningSummary;
-import com.example.cinema_middleware.v1.service.dto.SeatMapper;
+import com.example.cinema_middleware.v1.service.dto.ScreeningSeatMapper;
 import com.example.cinema_middleware.v1.service.dto.TheaterSummary;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -22,18 +23,23 @@ public class ScreeningService {
     private final ScreeningRepository screeningRepository;
 
     public List<ScreeningSummary> getScreeningSummaryByDate(LocalDate targetDate, @Nullable Long movieId) {
-        List<Screening> screeningList = screeningRepository.findScreeningListAtTargetDate(targetDate, movieId);
+        List<Screening> screeningList = screeningRepository.findScreeningListAtTargetDate(
+                targetDate == null ? LocalDate.now() : targetDate,
+                movieId
+        );
 
         List<SeatCount> seatCountList = screeningRepository.findSeatCountListByIdList(
-                screeningList.stream()
+                screeningList
+                        .stream()
                         .map(Screening::getId)
                         .toList()
         );
 
-        return screeningList.stream()
+        return screeningList
+                .stream()
                 .map(screening -> {
                     ScreeningSummary summary = ScreeningSummary.from(screening);
-                    summary.addSeatCount(seatCountList);
+                    summary.setSeatCount(seatCountList);
                     summary.setMovieSummary(MovieSummary.from(screening.getMovie()));
                     summary.setTheaterSummary(TheaterSummary.from(screening.getTheater()));
 
@@ -42,13 +48,11 @@ public class ScreeningService {
                 .toList();
     }
 
-    public SeatMapper getScreeningSeatForReservation(Long screeningId) {
-        List<ScreeningSeat> screeningSeatList = screeningRepository.findAllSeatForReservationById(screeningId);
+    public ScreeningSeatMapper getAllSeatForReservation(Long screeningId) {
+        Assert.notNull(screeningId, "screeningId can not be null");
 
-        if (screeningSeatList.size() == 0) {
-            throw new IllegalStateException("좌석 정보가 존재하지 않습니다.");
-        }
+        List<ScreeningSeat> seatList = screeningRepository.findAllSeatForReservationById(screeningId);
 
-        return SeatMapper.from(screeningSeatList);
+        return ScreeningSeatMapper.from(seatList);
     }
 }

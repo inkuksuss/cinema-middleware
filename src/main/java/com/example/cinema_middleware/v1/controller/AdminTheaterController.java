@@ -1,11 +1,16 @@
 package com.example.cinema_middleware.v1.controller;
 
+import com.example.cinema_middleware.v1.controller.request.BulkCreateSeatRequest;
 import com.example.cinema_middleware.v1.controller.request.CreateTheaterRequest;
 import com.example.cinema_middleware.v1.controller.request.ModifyTheaterRequest;
+import com.example.cinema_middleware.v1.controller.response.ResponseCode;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.AdminTheaterService;
-import com.example.cinema_middleware.v1.service.dto.SeatMapper;
 import com.example.cinema_middleware.v1.service.dto.TheaterSummary;
+import com.example.cinema_middleware.v1.service.dto.forms.BulkAddSeatForm;
+import com.example.cinema_middleware.v1.service.dto.TheaterSeatMapper;
+import com.example.cinema_middleware.v1.support.exception.SeatInUseException;
+import com.example.cinema_middleware.v1.support.exception.TheaterInUseException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -57,18 +62,55 @@ public class AdminTheaterController {
 
     @DeleteMapping("/{theaterId}")
     public ResponseEntity<Result<Void>> deleteTheater(@PathVariable Long theaterId) {
-        theaterService.remove(theaterId);
+        try {
+            theaterService.remove(theaterId);
+
+            return ResponseEntity
+                    .ok()
+                    .body(Result.ofSuccess());
+        } catch (TheaterInUseException e) {
+            return ResponseEntity
+                    .ok()
+                    .body(Result.of(ResponseCode.THEATER_IN_USE.getCode(), "이미 사용중인 영화관입니다.", null));
+        }
+    }
+
+    @GetMapping("/{theaterId}/seat")
+    public ResponseEntity<Result<TheaterSeatMapper>> getTheaterSeat(@PathVariable Long theaterId) {
+        TheaterSeatMapper result = theaterService.getAllAtTheater(theaterId);
+
+        return ResponseEntity
+                .ok()
+                .body(Result.ofSuccess(result));
+    }
+
+    @PostMapping("/{theaterId}/seat")
+    public ResponseEntity<Result<Void>> bulkCreateSeat(
+            @PathVariable Long theaterId,
+            @RequestBody @Validated BulkCreateSeatRequest request
+    ) {
+        BulkAddSeatForm form = request.toForm();
+        form.setTheaterId(theaterId);
+
+        theaterService.bulkAddSeat(form);
 
         return ResponseEntity
                 .ok()
                 .body(Result.ofSuccess());
     }
 
-    @GetMapping("/{theaterId}/seat")
-    public ResponseEntity<Result<SeatMapper>> getScreeningSeat(@PathVariable Long theaterId) {
+    @DeleteMapping("/seat/{seatId}")
+    public ResponseEntity<Result<Void>> deleteSeat(@PathVariable Long seatId) {
+        try {
+            theaterService.removeSeat(seatId);
 
+            return ResponseEntity
+                    .ok()
+                    .body(Result.ofSuccess());
+        } catch (SeatInUseException e) {
+            return ResponseEntity
+                    .ok()
+                    .body(Result.of(ResponseCode.SEAT_IN_USE.getCode(), "이미 사용중인 좌석입니다.", null));
+        }
     }
-
-
-
 }

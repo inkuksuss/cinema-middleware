@@ -58,4 +58,8 @@ public class Screening extends DefaultEntity {
 
         return screening;
     }
+
+    public void setStatus(ScreeningStatus status) {
+        this.status = status;
+    }
 }

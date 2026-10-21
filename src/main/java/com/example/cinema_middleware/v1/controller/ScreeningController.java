@@ -3,7 +3,7 @@ package com.example.cinema_middleware.v1.controller;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.ScreeningService;
 import com.example.cinema_middleware.v1.service.dto.ScreeningSummary;
-import com.example.cinema_middleware.v1.service.dto.SeatMapper;
+import com.example.cinema_middleware.v1.service.dto.ScreeningSeatMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -20,7 +20,7 @@ public class ScreeningController {
 
     private final ScreeningService screeningService;
 
-    @GetMapping("/summary")
+    @GetMapping("/")
     public ResponseEntity<Result<List<ScreeningSummary>>> getSummary(
             @RequestParam(value = "movieId", required = false) Long movieId,
             @RequestParam("targetDate") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate targetDate
@@ -33,11 +33,11 @@ public class ScreeningController {
     }
 
     @GetMapping("/{screeningId}/seat")
-    public ResponseEntity<Result<SeatMapper>> getScreeningSeat(@PathVariable Long screeningId) {
-        SeatMapper seatMapper = screeningService.getScreeningSeatForReservation(screeningId);
+    public ResponseEntity<Result<ScreeningSeatMapper>> getAllSeatForReservation(@PathVariable Long screeningId) {
+        ScreeningSeatMapper result = screeningService.getAllSeatForReservation(screeningId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(Result.ofSuccess(seatMapper));
+                .body(Result.ofSuccess(result));
     }
 }

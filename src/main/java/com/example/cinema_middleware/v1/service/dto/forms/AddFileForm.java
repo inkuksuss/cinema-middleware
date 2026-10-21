@@ -1,4 +1,4 @@
-package com.example.cinema_middleware.v1.service.dto;
+package com.example.cinema_middleware.v1.service.dto.forms;
 
 import com.example.cinema_middleware.v1.domain.entity.enums.UsageType;
 import com.example.cinema_middleware.v1.domain.entity.enums.TableType;

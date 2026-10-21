@@ -1,6 +1,7 @@
 package com.example.cinema_middleware.v1.domain.entity;
 
-import com.example.cinema_middleware.v1.domain.entity.base.SimpleBaseEntity;
+import com.example.cinema_middleware.v1.domain.entity.base.DefaultEntity;
+import com.example.cinema_middleware.v1.domain.entity.base.TimeEntity;
 import com.example.cinema_middleware.v1.domain.entity.enums.IssuanceStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -12,11 +13,9 @@ import org.hibernate.annotations.SQLRestriction;
 import java.time.LocalDateTime;
 
 @Entity
-@SQLRestriction("is_delete = 'N'")
-@SQLDelete(sql = "UPDATE coupon_issuance SET is_delete = 'Y' WHERE coupon_issuance_id = ?")
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
-public class CouponIssuance extends SimpleBaseEntity {
+public class CouponIssuance extends DefaultEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "coupon_issuance_id")
@@ -30,6 +29,7 @@ public class CouponIssuance extends SimpleBaseEntity {
     @JoinColumn(name = "coupon_id")
     private Coupon coupon;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 100)
     private IssuanceStatus status = IssuanceStatus.ISSUED;
 

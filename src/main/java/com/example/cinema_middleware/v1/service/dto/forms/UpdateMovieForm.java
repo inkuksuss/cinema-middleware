@@ -1,18 +1,19 @@
-package com.example.cinema_middleware.v1.service.dto;
+package com.example.cinema_middleware.v1.service.dto.forms;
 
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieAgeRating;
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieCategory;
-import com.example.cinema_middleware.v1.domain.entity.enums.YesOrNo;
+import com.example.cinema_middleware.v1.domain.entity.enums.MovieStatus;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 
 @Getter @Setter
 @ToString
-public class AddMovieForm {
+public class UpdateMovieForm {
+
+    private Long movieId;
 
     private String title;
 
@@ -28,9 +29,7 @@ public class AddMovieForm {
 
     private LocalDate closeDate;
 
-    private YesOrNo isActive;
+    private MovieStatus status;
 
     private MovieCategory category;
-
-    private MultipartFile thumbnail;
 }

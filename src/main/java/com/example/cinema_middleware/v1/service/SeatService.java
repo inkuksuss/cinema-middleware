@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class TheaterSeatService {
+public class SeatService {
 
     private final TheaterSeatRepository theaterSeatRepository;
 }

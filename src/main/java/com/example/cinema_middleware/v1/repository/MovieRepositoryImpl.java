@@ -1,7 +1,7 @@
 package com.example.cinema_middleware.v1.repository;
 
 import com.example.cinema_middleware.v1.domain.entity.Movie;
-import com.example.cinema_middleware.v1.domain.entity.enums.YesOrNo;
+import com.example.cinema_middleware.v1.domain.entity.enums.MovieStatus;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -66,13 +66,13 @@ public class MovieRepositoryImpl implements MovieRepositoryQuery {
     }
 
     @Override
-    public Page<Movie> findMoviePage(Pageable pageable, String title, YesOrNo isActive) {
+    public Page<Movie> findMoviePage(Pageable pageable, String title, MovieStatus status) {
         List<Movie> content = queryFactory
                 .select(movie)
                 .from(movie)
                 .where(
                         titleContains(title),
-                        isActiveEq(isActive)
+                        statusEq(status)
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -84,7 +84,7 @@ public class MovieRepositoryImpl implements MovieRepositoryQuery {
                 .from(movie)
                 .where(
                         titleContains(title),
-                        isActiveEq(isActive)
+                        statusEq(status)
                 )
                 .fetchOne();
 
@@ -95,5 +95,5 @@ public class MovieRepositoryImpl implements MovieRepositoryQuery {
         return StringUtils.hasText(title) ? movie.title.contains(title) : null;
     }
 
-    private BooleanExpression isActiveEq(YesOrNo isActive) { return isActive != null ? movie.isActive.eq(isActive) : null; }
+    private BooleanExpression statusEq(MovieStatus status) { return status != null ? movie.status.eq(status) : null; }
 }

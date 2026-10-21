@@ -3,7 +3,6 @@ package com.example.cinema_middleware.v1.controller;
 import com.example.cinema_middleware.v1.controller.request.SignUpRequest;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.MemberService;
-import com.example.cinema_middleware.v1.service.dto.AddMemberForm;
 import com.example.cinema_middleware.v1.service.dto.MemberDetail;
 import com.example.cinema_middleware.v1.support.exception.InvalidAccessTokenException;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +21,7 @@ public class MemberController {
 
     @PostMapping("/sign-up")
     public ResponseEntity<Result<Long>> signUp(@RequestBody @Validated SignUpRequest request) {
-        memberService.addMember(AddMemberForm.from(request));
+        memberService.addMember(request.toForm());
 
         return ResponseEntity
                 .status(HttpStatus.OK)

@@ -1,9 +1,7 @@
 package com.example.cinema_middleware.v1.service;
 
 import com.example.cinema_middleware.v1.domain.entity.*;
-import com.example.cinema_middleware.v1.domain.entity.enums.MovieCategory;
-import com.example.cinema_middleware.v1.domain.entity.enums.ScreeningStatus;
-import com.example.cinema_middleware.v1.domain.entity.enums.SeatGrade;
+import com.example.cinema_middleware.v1.domain.entity.enums.*;
 import com.example.cinema_middleware.v1.repository.*;
 import com.example.cinema_middleware.v1.repository.dto.SeatData;
 import lombok.extern.slf4j.Slf4j;
@@ -67,7 +65,9 @@ class MovieReservationSeatServiceTest {
                 "hello",
                 "123",
                 "01022223333",
-                "20111111"
+                "20111111",
+                MemberGrade.ROLE_COMMON,
+                SocialProvider.NORMAL
         );
         Member savedMember = memberRepository.save(member);
         Theater theater = Theater.create("theater1", "desc");
@@ -76,10 +76,11 @@ class MovieReservationSeatServiceTest {
         movie.setTitle("hello");
         movie.setSummary("aa");
         movie.setRunningTime(120);
-        movie.setAgeRating("19");
+        movie.setAgeRating(MovieAgeRating.ONLY_ADULT);
         movie.setReleaseDate(now);
         movie.setCloseDate(now.plusDays(7));
         movie.setCategory(MovieCategory.ROMANCE);
+        movie.setStatus(MovieStatus.DISPLAY);
         Movie savedMovie = movieRepository.save(movie);
         Screening screening = Screening.create(savedMovie, savedTheater, now, LocalTime.MIN, ScreeningStatus.ON_SALE);
         Screening savedScreening = screeningRepository.save(screening);
@@ -136,7 +137,9 @@ class MovieReservationSeatServiceTest {
                 "hello",
                 "123",
                 "01022223333",
-                "20111111"
+                "20111111",
+                MemberGrade.ROLE_COMMON,
+                SocialProvider.NORMAL
         );
         Member savedMember = memberRepository.save(member);
         Theater theater = Theater.create("theater1", "desc");
@@ -145,10 +148,11 @@ class MovieReservationSeatServiceTest {
         movie.setTitle("hello");
         movie.setSummary("aa");
         movie.setRunningTime(120);
-        movie.setAgeRating("19");
+        movie.setAgeRating(MovieAgeRating.ONLY_ADULT);
         movie.setReleaseDate(now);
         movie.setCloseDate(now.plusDays(7));
         movie.setCategory(MovieCategory.ROMANCE);
+        movie.setStatus(MovieStatus.DISPLAY);
         Movie savedMovie = movieRepository.save(movie);
         Screening screening = Screening.create(savedMovie, savedTheater, now, LocalTime.MIN, ScreeningStatus.ON_SALE);
         Screening savedScreening = screeningRepository.save(screening);

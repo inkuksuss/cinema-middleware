@@ -3,6 +3,7 @@ package com.example.cinema_middleware.v1.service;
 import com.example.cinema_middleware.v1.domain.entity.Movie;
 import com.example.cinema_middleware.v1.domain.entity.Screening;
 import com.example.cinema_middleware.v1.domain.entity.Theater;
+import com.example.cinema_middleware.v1.domain.entity.enums.MovieAgeRating;
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieCategory;
 import com.example.cinema_middleware.v1.domain.entity.enums.ScreeningStatus;
 import com.example.cinema_middleware.v1.repository.MovieRepository;
@@ -48,7 +49,7 @@ class ScreeningServiceTest {
         movie.setTitle("hello");
         movie.setSummary("aa");
         movie.setRunningTime(120);
-        movie.setAgeRating("19");
+        movie.setAgeRating(MovieAgeRating.ONLY_ADULT);
         movie.setReleaseDate(now.toLocalDate());
         movie.setCloseDate(now.toLocalDate().plusDays(7));
         movie.setCategory(MovieCategory.ROMANCE);

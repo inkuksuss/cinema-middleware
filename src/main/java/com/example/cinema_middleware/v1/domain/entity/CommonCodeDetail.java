@@ -1,6 +1,6 @@
 package com.example.cinema_middleware.v1.domain.entity;
 
-import com.example.cinema_middleware.v1.domain.entity.base.BaseEntity;
+import com.example.cinema_middleware.v1.domain.entity.base.DefaultEntity;
 import com.example.cinema_middleware.v1.domain.entity.key.CommonCodeDetailId;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -14,9 +14,9 @@ import org.hibernate.annotations.SQLRestriction;
 @Table(name = "common_code_detail")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
-@SQLDelete(sql = "UPDATE common_code_detail SET is_delete = 'Y' WHERE common_code_group_id = ? AND common_code_detail_code = ?")
-@SQLRestriction("is_delete = 'N'")
-public class CommonCodeDetail extends BaseEntity {
+@SQLDelete(sql = "UPDATE common_code_detail SET is_delete = true WHERE common_code_group_id = ? AND common_code_detail_code = ?")
+@SQLRestriction("is_delete = false")
+public class CommonCodeDetail extends DefaultEntity {
 
     @EmbeddedId
     private CommonCodeDetailId id;
@@ -32,6 +32,9 @@ public class CommonCodeDetail extends BaseEntity {
     private Integer sortOrder = 0;
 
     private String attr;
+
+    @Column(nullable = false)
+    private boolean isDelete = false;
 
     public CommonCodeDetail(CommonCodeGroup commonCodeGroup, String commonCodeDetailCode, String description) {
         this.id = new CommonCodeDetailId(commonCodeGroup.getCommonCodeGroupId(), commonCodeDetailCode);

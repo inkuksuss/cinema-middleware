@@ -1,14 +1,16 @@
 package com.example.cinema_middleware.v1.service;
 
 import com.example.cinema_middleware.v1.domain.entity.Movie;
+import com.example.cinema_middleware.v1.domain.entity.enums.MovieStatus;
 import com.example.cinema_middleware.v1.domain.entity.enums.UsageType;
 import com.example.cinema_middleware.v1.domain.entity.enums.TableType;
-import com.example.cinema_middleware.v1.domain.entity.enums.YesOrNo;
 import com.example.cinema_middleware.v1.repository.MovieRepository;
 import com.example.cinema_middleware.v1.service.dto.*;
+import com.example.cinema_middleware.v1.service.dto.forms.AddFileForm;
+import com.example.cinema_middleware.v1.service.dto.forms.AddMovieForm;
+import com.example.cinema_middleware.v1.service.dto.forms.UpdateMovieForm;
 import com.example.cinema_middleware.v1.support.exception.TargetNotFoundException;
 import jakarta.annotation.Nullable;
-import org.hibernate.ObjectNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,8 +27,8 @@ public class AdminMovieService {
         this.fileService = fileService;
     }
 
-    public Page<MovieSummary> getMovieSummary(Pageable pageable, @Nullable String title, @Nullable YesOrNo isActive) {
-        Page<Movie> moviePage = movieRepository.findMoviePage(pageable, title, isActive);
+    public Page<MovieSummary> getMovieSummary(Pageable pageable, @Nullable String title, @Nullable MovieStatus status) {
+        Page<Movie> moviePage = movieRepository.findMoviePage(pageable, title, status);
 
         return moviePage.map(MovieSummary::from);
     }
@@ -50,7 +52,7 @@ public class AdminMovieService {
                 form.getAgeRating(),
                 form.getReleaseDate(),
                 form.getCloseDate(),
-                form.getIsActive(),
+                form.getStatus(),
                 form.getCategory()
         ));
 
@@ -72,7 +74,7 @@ public class AdminMovieService {
         findMovie.setAgeRating(form.getAgeRating());
         findMovie.setReleaseDate(form.getReleaseDate());
         findMovie.setCloseDate(form.getCloseDate());
-        findMovie.setIsActive(form.getIsActive());
+        findMovie.setStatus(form.getStatus());
         findMovie.setCategory(form.getCategory());
     }
 

@@ -2,14 +2,20 @@ package com.example.cinema_middleware.v1.repository;
 
 import com.example.cinema_middleware.v1.domain.entity.MovieReservation;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
+import com.example.cinema_middleware.v1.repository.dto.ReservationAdminRow;
+import com.example.cinema_middleware.v1.repository.dto.search.AdminReservationSummarySearch;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.*;
+import org.springframework.util.StringUtils;
 
+import java.time.LocalTime;
 import java.util.List;
 
+import static com.example.cinema_middleware.v1.domain.entity.QMember.*;
 import static com.example.cinema_middleware.v1.domain.entity.QMovie.*;
 import static com.example.cinema_middleware.v1.domain.entity.QMovieReservation.*;
 import static com.example.cinema_middleware.v1.domain.entity.QScreening.*;
@@ -28,8 +34,8 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
         List<MovieReservation> content = queryFactory
                 .select(movieReservation)
                 .from(movieReservation)
-                .join(movieReservation.screening, screening)
-                .join(screening.movie, movie)
+                .leftJoin(movieReservation.screening, screening)
+                .leftJoin(screening.movie, movie)
                 .fetchJoin()
                 .where(
                         movieReservation.member.id.eq(memberId),
@@ -57,8 +63,8 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
         List<MovieReservation> content = queryFactory
                 .select(movieReservation)
                 .from(movieReservation)
-                .join(movieReservation.screening, screening)
-                .join(screening.movie, movie)
+                .leftJoin(movieReservation.screening, screening)
+                .leftJoin(screening.movie, movie)
                 .fetchJoin()
                 .where(
                         movieReservation.member.id.eq(memberId),
@@ -72,7 +78,65 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
         return createSlice(content, pageable);
     }
 
+    @Override
+    public Page<ReservationAdminRow> findReservationAdminRow(AdminReservationSummarySearch search) {
+        List<ReservationAdminRow> content = queryFactory
+                .select(Projections.constructor(
+                        ReservationAdminRow.class,
+                        movieReservation.id,
+                        movieReservation.member.id,
+                        movieReservation.member.username,
+                        movieReservation.code,
+                        movieReservation.status,
+                        movieReservation.createdAt,
+                        movieReservation.updatedAt
+                ))
+                .from(movieReservation)
+                .leftJoin(movieReservation.member, member)
+                .where(
+                        movieReservation.createdAt.goe(search.getStartDate().atStartOfDay()),
+                        movieReservation.createdAt.loe(search.getEndDate().atTime(LocalTime.MAX)),
+                        codeEq(search.getCode()),
+                        reservationStatusEq(search.getStatus())
+                )
+                .offset(search.getPageable().getOffset())
+                .limit(search.getPageable().getPageSize())
+                .orderBy(movieReservation.createdAt.desc())
+                .fetch();
+
+        Long count = queryFactory
+                .select(movieReservation.count())
+                .from(movieReservation)
+                .where(
+                        movieReservation.createdAt.goe(search.getStartDate().atStartOfDay()),
+                        movieReservation.createdAt.loe(search.getEndDate().atTime(LocalTime.MAX)),
+                        codeEq(search.getCode()),
+                        reservationStatusEq(search.getStatus())
+                )
+                .fetchOne();
+
+        return new PageImpl<>(content, search.getPageable(), count);
+    }
+
+
+    @Override
+    public boolean existsAliveByScreeningId(Long screeningId) {
+        return queryFactory
+                .selectOne()
+                .from(movieReservation)
+                .join(movieReservation.screening, screening)
+                .where(
+                        movieReservation.screening.id.eq(screeningId),
+                        movieReservation.status.in(ReservationStatus.PENDING, ReservationStatus.SUCCESS)
+                )
+                .fetchFirst() != null;
+    }
+
     private BooleanExpression reservationStatusEq(ReservationStatus status) {
         return status != null ? movieReservation.status.eq(status) : null;
+    }
+
+    private BooleanExpression codeEq(String code) {
+        return StringUtils.hasText(code) ? movieReservation.code.eq(code) : null;
     }
 }

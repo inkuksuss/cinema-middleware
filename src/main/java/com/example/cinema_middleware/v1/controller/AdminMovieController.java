@@ -3,12 +3,11 @@ package com.example.cinema_middleware.v1.controller;
 import com.example.cinema_middleware.v1.controller.request.CreateMovieRequest;
 import com.example.cinema_middleware.v1.controller.request.ModifyMovieRequest;
 import com.example.cinema_middleware.v1.controller.response.Result;
-import com.example.cinema_middleware.v1.domain.entity.enums.YesOrNo;
+import com.example.cinema_middleware.v1.domain.entity.enums.MovieStatus;
 import com.example.cinema_middleware.v1.service.AdminMovieService;
-import com.example.cinema_middleware.v1.service.dto.AddMovieForm;
-import com.example.cinema_middleware.v1.service.dto.MovieDetail;
-import com.example.cinema_middleware.v1.service.dto.MovieSummary;
-import com.example.cinema_middleware.v1.service.dto.UpdateMovieForm;
+import com.example.cinema_middleware.v1.service.dto.*;
+import com.example.cinema_middleware.v1.service.dto.forms.AddMovieForm;
+import com.example.cinema_middleware.v1.service.dto.forms.UpdateMovieForm;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,9 +30,9 @@ public class AdminMovieController {
     public ResponseEntity<Result<Page<MovieSummary>>> getMovieSummary(
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 7) Pageable pageable,
             @RequestParam(required = false) String title,
-            @RequestParam(required = false) YesOrNo isActive
-    ) {
-        Page<MovieSummary> result = movieService.getMovieSummary(pageable, title, isActive);
+            @RequestParam(required = false) MovieStatus status
+            ) {
+        Page<MovieSummary> result = movieService.getMovieSummary(pageable, title, status);
 
         return ResponseEntity
                 .ok()

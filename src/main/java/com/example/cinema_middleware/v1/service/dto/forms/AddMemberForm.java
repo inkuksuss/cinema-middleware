@@ -1,4 +1,4 @@
-package com.example.cinema_middleware.v1.service.dto;
+package com.example.cinema_middleware.v1.service.dto.forms;
 
 import lombok.Getter;
 import lombok.Setter;

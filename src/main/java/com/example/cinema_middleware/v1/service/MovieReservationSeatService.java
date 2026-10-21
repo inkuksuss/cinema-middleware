@@ -9,8 +9,4 @@ import org.springframework.stereotype.Service;
 public class MovieReservationSeatService {
 
     private final MovieReservationSeatRepository movieReservationSeatRepository;
-
-    public void addReservationSeat() {
-
-    }
 }

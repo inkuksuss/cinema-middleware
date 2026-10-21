@@ -1,7 +1,9 @@
 package com.example.cinema_middleware.v1.repository;
 
 import com.example.cinema_middleware.v1.domain.entity.Screening;
-import com.example.cinema_middleware.v1.domain.entity.enums.YesOrNo;
+import com.example.cinema_middleware.v1.domain.entity.enums.ReservationSeatStatus;
+import com.example.cinema_middleware.v1.domain.entity.enums.ScreeningStatus;
+import com.example.cinema_middleware.v1.repository.dto.ScreeningAdminRow;
 import com.example.cinema_middleware.v1.repository.dto.ScreeningSeat;
 import com.example.cinema_middleware.v1.repository.dto.SeatCount;
 import com.example.cinema_middleware.v1.repository.dto.SeatData;
@@ -11,9 +13,13 @@ import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.EntityManager;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 import static com.example.cinema_middleware.v1.domain.entity.QMovie.*;
@@ -40,6 +46,7 @@ public class ScreeningRepositoryImpl implements ScreeningRepositoryQuery {
                 .fetchJoin()
                 .where(
                         screening.startDate.eq(targetDate),
+                        screening.status.eq(ScreeningStatus.ON_SALE),
                         movieIdEq(movieId)
                 )
                 .orderBy(screening.startAt.asc())
@@ -61,7 +68,7 @@ public class ScreeningRepositoryImpl implements ScreeningRepositoryQuery {
                                 .from(movieReservationSeat)
                                 .where(
                                         movieReservationSeat.screening.id.eq(screening.id),
-                                        movieReservationSeat.isActive.eq(YesOrNo.Y)
+                                        movieReservationSeat.status.eq(ReservationSeatStatus.RESERVED)
                                 )
                 ))
                 .from(screening)
@@ -81,14 +88,17 @@ public class ScreeningRepositoryImpl implements ScreeningRepositoryQuery {
                         theaterSeat.grade,
                         theaterSeat.price,
                         movieReservationSeat.id,
-                        movieReservationSeat.isActive
+                        movieReservationSeat.status
                 ))
                 .from(screening)
                 .join(screening.theater, theater)
                 .join(theaterSeat)
                 .on(theater.id.eq(theaterSeat.theater.id))
                 .leftJoin(movieReservationSeat)
-                .on(theaterSeat.id.eq(movieReservationSeat.theaterSeat.id), (movieReservationSeat.isActive.eq(YesOrNo.Y)))
+                .on(theaterSeat.id.eq(
+                        movieReservationSeat.theaterSeat.id),
+                        (movieReservationSeat.status.eq(ReservationSeatStatus.RESERVED))
+                )
                 .where(screening.id.eq(screeningId))
                 .fetch();
     }
@@ -114,7 +124,71 @@ public class ScreeningRepositoryImpl implements ScreeningRepositoryQuery {
                 .fetch();
     }
 
+    @Override
+    public Page<ScreeningAdminRow> findAdminRow(Pageable pageable, LocalDate targetDate, @Nullable Long theaterId, @Nullable Long movieId) {
+        List<ScreeningAdminRow> content =  queryFactory
+                .select(Projections.constructor(
+                        ScreeningAdminRow.class,
+                        screening.id,
+                        movie.id,
+                        movie.title,
+                        theater.id,
+                        theater.name,
+                        screening.startDate,
+                        screening.startAt,
+                        screening.status
+                        )
+                )
+                .from(screening)
+                .where(
+                        screening.startDate.eq(targetDate),
+                        movieIdEq(movieId),
+                        theaterIdEq(theaterId)
+                )
+                .leftJoin(screening.movie, movie)
+                .leftJoin(screening.theater, theater)
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .orderBy(screening.createdAt.desc())
+                .fetch();
+
+        Long count = queryFactory
+                .select(screening.count())
+                .from(screening)
+                .where(
+                        screening.startDate.eq(targetDate),
+                        movieIdEq(movieId),
+                        theaterIdEq(theaterId)
+                )
+                .fetchOne();
+
+
+        return new PageImpl<>(content, pageable, count);
+    }
+
+    @Override
+    public boolean existsAlreadyUsing(Long theaterId, LocalDate date, LocalTime time) {
+        return queryFactory
+                .selectOne()
+                .from(screening)
+                .where(
+                        screening.theater.id.eq(theaterId)
+                                .and(
+                                        (screening.startDate.gt(date)
+                                                .or(
+                                                        (screening.startDate.eq(date).and(screening.startAt.goe(time)))
+                                                )
+                                        )
+                                )
+                )
+                .fetchFirst() != null;
+    }
+
     private BooleanExpression movieIdEq(Long movieId) {
         return movieId != null ? movie.id.eq(movieId) : null;
+    }
+
+    private BooleanExpression theaterIdEq(Long theaterId) {
+        return theaterId != null ? theater.id.eq(theaterId) : null;
     }
 }

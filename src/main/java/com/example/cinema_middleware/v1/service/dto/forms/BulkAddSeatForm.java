@@ -1,4 +1,4 @@
-package com.example.cinema_middleware.v1.service.dto;
+package com.example.cinema_middleware.v1.service.dto.forms;
 
 import com.example.cinema_middleware.v1.domain.entity.enums.SeatGrade;
 import lombok.AllArgsConstructor;
@@ -24,7 +24,7 @@ public class BulkAddSeatForm {
     @Getter
     @ToString
     @AllArgsConstructor
-    static class AddSeatForm {
+    public static class AddSeatForm {
         private String seatRow;
 
         private String seatColumn;

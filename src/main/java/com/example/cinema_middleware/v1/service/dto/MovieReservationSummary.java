@@ -1,12 +1,11 @@
 package com.example.cinema_middleware.v1.service.dto;
 
-import com.example.cinema_middleware.v1.domain.entity.Movie;
 import com.example.cinema_middleware.v1.domain.entity.MovieReservation;
-import com.example.cinema_middleware.v1.domain.entity.Screening;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
 
@@ -29,6 +28,8 @@ public class MovieReservationSummary {
     private ScreeningSummary screeningSummary;
 
     public static MovieReservationSummary from(MovieReservation movieReservation) {
+        Assert.notNull(movieReservation, "movieReservation can not be null");
+
         MovieReservationSummary movieReservationSummary = new MovieReservationSummary();
         movieReservationSummary.reservationId = movieReservation.getId();
         movieReservationSummary.code = movieReservation.getCode();
@@ -37,13 +38,5 @@ public class MovieReservationSummary {
         movieReservationSummary.status = movieReservation.getStatus();
 
         return movieReservationSummary;
-    }
-
-    public void addMovieSummary(Movie movie) {
-        this.movieSummary = MovieSummary.from(movie);
-    }
-
-    public void addScreeningSummary(Screening screening) {
-        this.screeningSummary = ScreeningSummary.from(screening);
     }
 }

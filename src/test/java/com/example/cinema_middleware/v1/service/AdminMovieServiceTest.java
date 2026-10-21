@@ -20,9 +20,6 @@ class AdminMovieServiceTest {
     @Test
     @Rollback(value = false)
     void test() {
-        Movie referenceById = movieRepository.getReferenceById(2L);
-
-        movieRepository.delete(referenceById);
     }
 
 }

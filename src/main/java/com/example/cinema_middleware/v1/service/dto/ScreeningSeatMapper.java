@@ -1,7 +1,7 @@
 package com.example.cinema_middleware.v1.service.dto;
 
+import com.example.cinema_middleware.v1.domain.entity.enums.ReservationSeatStatus;
 import com.example.cinema_middleware.v1.domain.entity.enums.SeatGrade;
-import com.example.cinema_middleware.v1.domain.entity.enums.YesOrNo;
 import com.example.cinema_middleware.v1.repository.dto.ScreeningSeat;
 import lombok.Getter;
 import lombok.ToString;
@@ -33,7 +33,7 @@ public class ScreeningSeatMapper {
             userSeat.grade = screeningSeat.getSeatGrade();
             userSeat.price = screeningSeat.getPrice();
             userSeat.reservationSeatId = screeningSeat.getReservationSeatId();
-            userSeat.isActive = screeningSeat.getIsActive();
+            userSeat.status = screeningSeat.getStatus();
 
             seatMapper.seatList.add(userSeat);
         }
@@ -56,6 +56,6 @@ public class ScreeningSeatMapper {
 
         private Long reservationSeatId;
 
-        private YesOrNo isActive;
+        private ReservationSeatStatus status;
     }
 }

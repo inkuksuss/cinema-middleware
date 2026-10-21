@@ -1,7 +1,7 @@
 package com.example.cinema_middleware.v1.repository.dto;
 
+import com.example.cinema_middleware.v1.domain.entity.enums.ReservationSeatStatus;
 import com.example.cinema_middleware.v1.domain.entity.enums.SeatGrade;
-import com.example.cinema_middleware.v1.domain.entity.enums.YesOrNo;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
@@ -27,6 +27,6 @@ public class ScreeningSeat {
 
     private Long reservationSeatId;
 
-    private YesOrNo isActive;
+    private ReservationSeatStatus status;
 
 }

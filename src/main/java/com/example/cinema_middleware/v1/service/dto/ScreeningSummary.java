@@ -4,13 +4,15 @@ import com.example.cinema_middleware.v1.domain.entity.Screening;
 import com.example.cinema_middleware.v1.domain.entity.enums.ScreeningStatus;
 import com.example.cinema_middleware.v1.repository.dto.SeatCount;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
+import org.springframework.util.Assert;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
-@Getter
+@Getter @Setter
 @ToString
 public class ScreeningSummary {
 
@@ -31,6 +33,8 @@ public class ScreeningSummary {
     private Integer soldOutSeatCount = 0;
 
     public static ScreeningSummary from(Screening screening) {
+        Assert.notNull(screening, "screening can not be null");
+
         ScreeningSummary screeningSummary = new ScreeningSummary();
         screeningSummary.id = screening.getId();
         screeningSummary.startDate = screening.getStartDate();
@@ -40,20 +44,12 @@ public class ScreeningSummary {
         return screeningSummary;
     }
 
-    public void addSeatCount(List<SeatCount> seatCountList) {
+    public void setSeatCount(List<SeatCount> seatCountList) {
         for (SeatCount seatCount : seatCountList) {
             if (this.id.equals(seatCount.getScreeningId())) {
                 this.totalSeatCount = seatCount.getTotalSeatCount().intValue();
                 this.soldOutSeatCount = seatCount.getSoldOutSeatCount().intValue();
             }
         }
-    }
-
-    public void setMovieSummary(MovieSummary movieSummary) {
-        this.movieSummary = movieSummary;
-    }
-
-    public void setTheaterSummary(TheaterSummary theaterSummary) {
-        this.theaterSummary = theaterSummary;
     }
 }

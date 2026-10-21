@@ -1,7 +1,7 @@
 package com.example.cinema_middleware.v1.service;
 
 import com.example.cinema_middleware.v1.domain.entity.*;
-import com.example.cinema_middleware.v1.service.dto.MovieReservationSummary;
+import com.example.cinema_middleware.v1.service.dto.*;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
 import com.example.cinema_middleware.v1.domain.entity.enums.ScreeningStatus;
 import com.example.cinema_middleware.v1.repository.MovieReservationRepository;
@@ -9,7 +9,6 @@ import com.example.cinema_middleware.v1.repository.MovieReservationSeatRepositor
 import com.example.cinema_middleware.v1.repository.ScreeningRepository;
 import com.example.cinema_middleware.v1.repository.TheaterSeatRepository;
 import com.example.cinema_middleware.v1.repository.dto.SeatData;
-import com.example.cinema_middleware.v1.service.dto.MovieReservationDetail;
 import com.example.cinema_middleware.v1.support.exception.ScreeningNotOnSaleException;
 import com.example.cinema_middleware.v1.support.exception.SeatAlreadyTakenException;
 import com.example.cinema_middleware.v1.support.exception.TargetNotFoundException;
@@ -22,6 +21,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -69,7 +69,7 @@ public class MovieReservationService {
     }
 
     // TODO
-    public MovieReservationDetail confirmReservation(Long reservationId) {
+    public AdminMovieReservationDetail confirmReservation(Long reservationId) {
         Member member = authService.getMemberReference();
 
         MovieReservation movieReservation = movieReservationRepository.findById(reservationId)
@@ -81,34 +81,31 @@ public class MovieReservationService {
 
         movieReservation.confirm();
 
-        return MovieReservationDetail.from(movieReservation);
+        return AdminMovieReservationDetail.from(movieReservation);
     }
 
     public Page<MovieReservationSummary> getReservationPageAtMember(Pageable pageable, @Nullable ReservationStatus status) {
-        Long memberId = authService.getMemberId();
-
-        return movieReservationRepository.findReservationPageAtMember(pageable, memberId, status)
+        return movieReservationRepository.findReservationPageAtMember(pageable, authService.getMemberId(), status)
                 .map(movieReservation -> {
                     MovieReservationSummary movieReservationSummary = MovieReservationSummary.from(movieReservation);
-                    movieReservationSummary.addMovieSummary(movieReservation.getScreening().getMovie());
-                    movieReservationSummary.addScreeningSummary(movieReservation.getScreening());
+                    movieReservationSummary.setMovieSummary(MovieSummary.from(movieReservation.getScreening().getMovie()));
+                    movieReservationSummary.setScreeningSummary(ScreeningSummary.from(movieReservation.getScreening()));
 
                     return movieReservationSummary;
                 });
     }
 
     public MovieReservationDetail getReservationDetail(Long reservationId) {
-        Long memberId = authService.getMemberId();
-
         MovieReservation findReservation = movieReservationRepository.findDetailById(reservationId)
                 .orElseThrow(() -> { throw new TargetNotFoundException("존재하지 않는 티켓 정보입니다."); });
 
-        if (!memberId.equals(findReservation.getMember().getId())) {
-            throw new AccessDeniedException("잘못된 접근입니다.");
-        }
+        if (!(authService.getMemberId()).equals(findReservation.getMember().getId())) throw new AccessDeniedException("잘못된 접근입니다.");
 
         MovieReservationDetail movieReservationDetail = MovieReservationDetail.from(findReservation);
-        movieReservationDetail.addPaymentSummary(findReservation.getPayment());
+
+        findReservation.getPaymentList().stream()
+                .max(Comparator.comparing(MoviePayment::getCreatedAt))
+                .ifPresent(payment -> movieReservationDetail.setPaymentSummary(PaymentSummary.from(payment)));
 
         return movieReservationDetail;
     }

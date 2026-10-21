@@ -11,7 +11,9 @@ public interface MovieReservationRepository extends JpaRepository<MovieReservati
 
     @Query("SELECT mr FROM MovieReservation mr " +
             "JOIN FETCH mr.member " +
-            "JOIN FETCH mr.payment " +
+            "LEFT JOIN FETCH mr.paymentList " +
             "WHERE mr.id = :reservationId")
     Optional<MovieReservation> findDetailById(@Param("reservationId") Long reservationId);
+
+
 }

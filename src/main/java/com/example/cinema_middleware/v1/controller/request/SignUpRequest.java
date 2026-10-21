@@ -1,5 +1,6 @@
 package com.example.cinema_middleware.v1.controller.request;
 
+import com.example.cinema_middleware.v1.service.dto.forms.AddMemberForm;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -24,4 +25,14 @@ public record SignUpRequest(
         @NotBlank(message = "생년월일은 필수 입력 항목입니다.")
         String birthday
 ) {
+        public AddMemberForm toForm() {
+                AddMemberForm form = new AddMemberForm();
+                form.setEmail(email);
+                form.setUsername(username);
+                form.setPassword(password);
+                form.setPhoneNumber(phoneNumber);
+                form.setBirthday(birthday);
+
+                return form;
+        }
 }

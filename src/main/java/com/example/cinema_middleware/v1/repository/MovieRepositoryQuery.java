@@ -1,7 +1,7 @@
 package com.example.cinema_middleware.v1.repository;
 
 import com.example.cinema_middleware.v1.domain.entity.Movie;
-import com.example.cinema_middleware.v1.domain.entity.enums.YesOrNo;
+import com.example.cinema_middleware.v1.domain.entity.enums.MovieStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -14,5 +14,5 @@ public interface MovieRepositoryQuery {
 
     Slice<Movie> findMovieSliceByDate(Pageable pageable, LocalDate targetDate);
 
-    Page<Movie> findMoviePage(Pageable pageable, String title, YesOrNo isActive);
+    Page<Movie> findMoviePage(Pageable pageable, String title, MovieStatus status);
 }

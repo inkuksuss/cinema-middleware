@@ -3,7 +3,7 @@ package com.example.cinema_middleware.v1.service;
 import com.example.cinema_middleware.v1.domain.entity.FileMaster;
 import com.example.cinema_middleware.v1.domain.entity.enums.TableType;
 import com.example.cinema_middleware.v1.repository.FileRepository;
-import com.example.cinema_middleware.v1.service.dto.AddFileForm;
+import com.example.cinema_middleware.v1.service.dto.forms.AddFileForm;
 import com.example.cinema_middleware.v1.support.exception.FileSaveFailedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;

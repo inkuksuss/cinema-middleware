@@ -1,6 +1,6 @@
 package com.example.cinema_middleware.v1.domain.entity;
 
-import com.example.cinema_middleware.v1.domain.entity.base.BaseEntity;
+import com.example.cinema_middleware.v1.domain.entity.base.DefaultEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -11,11 +11,11 @@ import org.hibernate.annotations.SQLRestriction;
 import java.time.LocalDateTime;
 
 @Entity
-@SQLRestriction("is_delete = 'N'")
-@SQLDelete(sql = "UPDATE coupon SET is_delete = 'Y' WHERE coupon_id = ?")
+@SQLRestriction("is_delete = false")
+@SQLDelete(sql = "UPDATE coupon SET is_delete = true WHERE coupon_id = ?")
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
-public class Coupon extends BaseEntity {
+public class Coupon extends DefaultEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "coupon_id")
@@ -37,4 +37,7 @@ public class Coupon extends BaseEntity {
 
     @Column(nullable = false)
     private LocalDateTime endAt;
+
+    @Column(nullable = false)
+    private boolean isDelete = false;
 }

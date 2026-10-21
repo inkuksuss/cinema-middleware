@@ -1,8 +1,10 @@
 package com.example.cinema_middleware.v1.service;
 
 import com.example.cinema_middleware.v1.domain.entity.Member;
+import com.example.cinema_middleware.v1.domain.entity.enums.MemberGrade;
+import com.example.cinema_middleware.v1.domain.entity.enums.SocialProvider;
 import com.example.cinema_middleware.v1.repository.MemberRepository;
-import com.example.cinema_middleware.v1.service.dto.AddMemberForm;
+import com.example.cinema_middleware.v1.service.dto.forms.AddMemberForm;
 import com.example.cinema_middleware.v1.service.dto.MemberDetail;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,7 +24,9 @@ public class MemberService {
                 addMemberForm.getUsername(),
                 passwordEncoder.encode(addMemberForm.getPassword()),
                 addMemberForm.getPhoneNumber(),
-                addMemberForm.getBirthday()
+                addMemberForm.getBirthday(),
+                MemberGrade.ROLE_COMMON,
+                SocialProvider.NORMAL
         );
 
         memberRepository.save(member);
