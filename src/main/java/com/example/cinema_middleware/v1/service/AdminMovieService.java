@@ -7,8 +7,6 @@ import com.example.cinema_middleware.v1.domain.entity.enums.TableType;
 import com.example.cinema_middleware.v1.repository.MovieRepository;
 import com.example.cinema_middleware.v1.service.dto.*;
 import com.example.cinema_middleware.v1.service.dto.forms.AddFileForm;
-import com.example.cinema_middleware.v1.service.dto.forms.AddMovieForm;
-import com.example.cinema_middleware.v1.service.dto.forms.UpdateMovieForm;
 import com.example.cinema_middleware.v1.support.exception.TargetNotFoundException;
 import jakarta.annotation.Nullable;
 import org.springframework.data.domain.Page;
@@ -43,39 +41,39 @@ public class AdminMovieService {
     }
 
     @Transactional
-    public void addMovie(AddMovieForm form) {
+    public void addMovie(MovieCommand.Create command) {
         Movie savedMovie = movieRepository.save(Movie.create(
-                form.getTitle(),
-                form.getSummary(),
-                form.getDescription(),
-                form.getRunningTime(),
-                form.getAgeRating(),
-                form.getReleaseDate(),
-                form.getCloseDate(),
-                form.getStatus(),
-                form.getCategory()
+                command.title(),
+                command.summary(),
+                command.description(),
+                command.runningTime(),
+                command.ageRating(),
+                command.releaseDate(),
+                command.closeDate(),
+                command.status(),
+                command.category()
         ));
 
-        AddFileForm addFileForm = new AddFileForm(savedMovie.getId(), TableType.MOVIE, UsageType.THUMBNAIL, form.getThumbnail());
+        AddFileForm addFileForm = new AddFileForm(savedMovie.getId(), TableType.MOVIE, UsageType.THUMBNAIL, command.thumbnail());
         String destination = fileService.append(addFileForm);
 
         savedMovie.setPosterUrl(destination);
     }
 
     @Transactional
-    public void update(UpdateMovieForm form) {
-        Movie findMovie = movieRepository.findById(form.getMovieId())
+    public void update(MovieCommand.Update command) {
+        Movie findMovie = movieRepository.findById(command.movieId())
                 .orElseThrow(() -> { throw new TargetNotFoundException(); });
 
-        findMovie.setTitle(form.getTitle());
-        findMovie.setSummary(form.getSummary());
-        findMovie.setDescription(form.getDescription());
-        findMovie.setRunningTime(form.getRunningTime());
-        findMovie.setAgeRating(form.getAgeRating());
-        findMovie.setReleaseDate(form.getReleaseDate());
-        findMovie.setCloseDate(form.getCloseDate());
-        findMovie.setStatus(form.getStatus());
-        findMovie.setCategory(form.getCategory());
+        findMovie.setTitle(command.title());
+        findMovie.setSummary(command.summary());
+        findMovie.setDescription(command.description());
+        findMovie.setRunningTime(command.runningTime());
+        findMovie.setAgeRating(command.ageRating());
+        findMovie.setReleaseDate(command.releaseDate());
+        findMovie.setCloseDate(command.closeDate());
+        findMovie.setStatus(command.status());
+        findMovie.setCategory(command.category());
     }
 
     public void remove(Long movieId) {

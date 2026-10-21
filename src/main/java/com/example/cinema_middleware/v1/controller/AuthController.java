@@ -1,7 +1,6 @@
 package com.example.cinema_middleware.v1.controller;
 
-import com.example.cinema_middleware.v1.controller.request.ReissueRequest;
-import com.example.cinema_middleware.v1.controller.request.SignInRequest;
+import com.example.cinema_middleware.v1.controller.request.AuthRequest;
 import com.example.cinema_middleware.v1.controller.response.ResponseCode;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.AuthService;
@@ -23,7 +22,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/sign-in")
-    public ResponseEntity<Result<AuthDto.TokenIssuance>> signIn(@RequestBody @Validated SignInRequest request) {
+    public ResponseEntity<Result<AuthDto.TokenIssuance>> signIn(@RequestBody @Validated AuthRequest.SignIn request) {
         AuthDto.TokenIssuance result = authService.login(request.email(), request.password());
 
         return ResponseEntity
@@ -32,7 +31,7 @@ public class AuthController {
     }
 
     @PostMapping("/reissue")
-    public ResponseEntity<Result<AuthDto.TokenIssuance>> reissue(@RequestBody @Validated ReissueRequest request) {
+    public ResponseEntity<Result<AuthDto.TokenIssuance>> reissue(@RequestBody @Validated AuthRequest.Reissue request) {
         try {
             AuthDto.TokenIssuance result = authService.reissue(request.refreshToken());
 

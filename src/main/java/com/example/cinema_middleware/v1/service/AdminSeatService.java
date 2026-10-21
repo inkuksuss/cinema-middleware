@@ -5,7 +5,7 @@ import com.example.cinema_middleware.v1.domain.entity.TheaterSeat;
 import com.example.cinema_middleware.v1.repository.MovieReservationSeatRepository;
 import com.example.cinema_middleware.v1.repository.TheaterSeatRepository;
 import com.example.cinema_middleware.v1.service.dto.TheaterDto;
-import com.example.cinema_middleware.v1.service.dto.forms.BulkAddSeatForm;
+import com.example.cinema_middleware.v1.service.dto.TheaterCommand;
 import com.example.cinema_middleware.v1.support.exception.SeatInUseException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,21 +30,21 @@ public class AdminSeatService {
                 .toList();
     }
 
-    public void saveAll(Theater theater, List<BulkAddSeatForm.AddSeatForm> formList) {
+    public void saveAll(Theater theater, List<TheaterCommand.BulkAddSeat.Seat> seatList) {
         Assert.notNull(theater, "theater can not be null");
-        Assert.notEmpty(formList, "formList can not be empty");
+        Assert.notEmpty(seatList, "seatList can not be empty");
 
         List<TheaterSeat> holder = new ArrayList<>();
         final int limit = 50;
         int offset = 1;
 
-        for (int i = 0; i < formList.size(); i++) {
-            BulkAddSeatForm.AddSeatForm form = formList.get(i);
+        for (int i = 0; i < seatList.size(); i++) {
+            TheaterCommand.BulkAddSeat.Seat seat = seatList.get(i);
             holder.add(TheaterSeat.create(
                     theater,
-                    form.getSeatRow(),
-                    form.getSeatColumn(),
-                    form.getGrade())
+                    seat.seatRow(),
+                    seat.seatColumn(),
+                    seat.grade())
             );
 
             if (offset >= limit) {
@@ -54,7 +54,7 @@ public class AdminSeatService {
                 continue;
             }
 
-            if (i == formList.size() - 1) {
+            if (i == seatList.size() - 1) {
                 seatRepository.saveAll(holder);
                 holder.clear();
                 break;

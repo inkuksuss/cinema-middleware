@@ -1,6 +1,6 @@
 package com.example.cinema_middleware.v1.controller;
 
-import com.example.cinema_middleware.v1.controller.request.SignUpRequest;
+import com.example.cinema_middleware.v1.controller.request.MemberRequest;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.MemberService;
 import com.example.cinema_middleware.v1.service.dto.MemberDto;
@@ -20,8 +20,8 @@ public class MemberController {
     private final MemberService memberService;
 
     @PostMapping("/sign-up")
-    public ResponseEntity<Result<Long>> signUp(@RequestBody @Validated SignUpRequest request) {
-        memberService.addMember(request.toForm());
+    public ResponseEntity<Result<Long>> signUp(@RequestBody @Validated MemberRequest.SignUp request) {
+        memberService.addMember(request.toCommand());
 
         return ResponseEntity
                 .status(HttpStatus.OK)

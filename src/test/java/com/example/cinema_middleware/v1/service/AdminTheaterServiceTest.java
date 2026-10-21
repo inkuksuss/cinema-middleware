@@ -3,7 +3,7 @@ package com.example.cinema_middleware.v1.service;
 import com.example.cinema_middleware.v1.domain.entity.Theater;
 import com.example.cinema_middleware.v1.domain.entity.enums.SeatGrade;
 import com.example.cinema_middleware.v1.repository.TheaterRepository;
-import com.example.cinema_middleware.v1.service.dto.forms.BulkAddSeatForm;
+import com.example.cinema_middleware.v1.service.dto.TheaterCommand;
 import jakarta.persistence.EntityManager;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -29,9 +29,9 @@ class AdminTheaterServiceTest {
         final int size = 201;
         Theater savedTheater = theaterRepository.save(Theater.create("test1", "1"));
 
-        List<BulkAddSeatForm.AddSeatForm> list = new ArrayList<>();
+        List<TheaterCommand.BulkAddSeat.Seat> list = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            list.add(new BulkAddSeatForm.AddSeatForm("A", Integer.valueOf(i).toString(), SeatGrade.NORMAL));
+            list.add(new TheaterCommand.BulkAddSeat.Seat("A", Integer.valueOf(i).toString(), SeatGrade.NORMAL));
         }
 
         //when
@@ -48,9 +48,9 @@ class AdminTheaterServiceTest {
         final int size = 200;
         Theater savedTheater = theaterRepository.save(Theater.create("test1", "1"));
 
-        List<BulkAddSeatForm.AddSeatForm> list = new ArrayList<>();
+        List<TheaterCommand.BulkAddSeat.Seat> list = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            list.add(new BulkAddSeatForm.AddSeatForm("A", Integer.valueOf(i).toString(), SeatGrade.NORMAL));
+            list.add(new TheaterCommand.BulkAddSeat.Seat("A", Integer.valueOf(i).toString(), SeatGrade.NORMAL));
         }
 
         //when
@@ -67,9 +67,9 @@ class AdminTheaterServiceTest {
         final int size = 199;
         Theater savedTheater = theaterRepository.save(Theater.create("test1", "1"));
 
-        List<BulkAddSeatForm.AddSeatForm> list = new ArrayList<>();
+        List<TheaterCommand.BulkAddSeat.Seat> list = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            list.add(new BulkAddSeatForm.AddSeatForm("A", Integer.valueOf(i).toString(), SeatGrade.NORMAL));
+            list.add(new TheaterCommand.BulkAddSeat.Seat("A", Integer.valueOf(i).toString(), SeatGrade.NORMAL));
         }
 
         //when

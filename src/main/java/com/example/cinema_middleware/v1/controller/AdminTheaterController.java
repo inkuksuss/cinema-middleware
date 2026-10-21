@@ -1,13 +1,10 @@
 package com.example.cinema_middleware.v1.controller;
 
-import com.example.cinema_middleware.v1.controller.request.BulkCreateSeatRequest;
-import com.example.cinema_middleware.v1.controller.request.CreateTheaterRequest;
-import com.example.cinema_middleware.v1.controller.request.ModifyTheaterRequest;
+import com.example.cinema_middleware.v1.controller.request.TheaterRequest;
 import com.example.cinema_middleware.v1.controller.response.ResponseCode;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.AdminTheaterService;
 import com.example.cinema_middleware.v1.service.dto.TheaterDto;
-import com.example.cinema_middleware.v1.service.dto.forms.BulkAddSeatForm;
 import com.example.cinema_middleware.v1.support.exception.SeatInUseException;
 import com.example.cinema_middleware.v1.support.exception.TheaterInUseException;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +35,7 @@ public class AdminTheaterController {
     }
 
     @PostMapping("/")
-    public ResponseEntity<Result<Void>> createTheater(@RequestBody @Validated CreateTheaterRequest request
+    public ResponseEntity<Result<Void>> createTheater(@RequestBody @Validated TheaterRequest.Create request
     ) {
         theaterService.addTheater(request.name(), request.description());
 
@@ -50,7 +47,7 @@ public class AdminTheaterController {
     @PutMapping("/{theaterId}")
     public ResponseEntity<Result<Void>> modifyTheater(
             @PathVariable Long theaterId,
-            @RequestBody @Validated ModifyTheaterRequest request
+            @RequestBody @Validated TheaterRequest.Modify request
     ) {
         theaterService.update(theaterId, request.name(), request.description());
 
@@ -86,12 +83,9 @@ public class AdminTheaterController {
     @PostMapping("/{theaterId}/seat")
     public ResponseEntity<Result<Void>> bulkCreateSeat(
             @PathVariable Long theaterId,
-            @RequestBody @Validated BulkCreateSeatRequest request
+            @RequestBody @Validated TheaterRequest.BulkCreateSeat request
     ) {
-        BulkAddSeatForm form = request.toForm();
-        form.setTheaterId(theaterId);
-
-        theaterService.bulkAddSeat(form);
+        theaterService.bulkAddSeat(request.toCommand(theaterId));
 
         return ResponseEntity
                 .ok()

@@ -4,8 +4,8 @@ import com.example.cinema_middleware.v1.domain.entity.Member;
 import com.example.cinema_middleware.v1.domain.entity.enums.MemberGrade;
 import com.example.cinema_middleware.v1.domain.entity.enums.SocialProvider;
 import com.example.cinema_middleware.v1.repository.MemberRepository;
-import com.example.cinema_middleware.v1.service.dto.forms.AddMemberForm;
 import com.example.cinema_middleware.v1.service.dto.MemberDto;
+import com.example.cinema_middleware.v1.service.dto.MemberCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,13 +18,13 @@ public class MemberService {
     private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
 
-    public void addMember(AddMemberForm addMemberForm) {
+    public void addMember(MemberCommand.SignUp command) {
         Member member = Member.create(
-                addMemberForm.getEmail(),
-                addMemberForm.getUsername(),
-                passwordEncoder.encode(addMemberForm.getPassword()),
-                addMemberForm.getPhoneNumber(),
-                addMemberForm.getBirthday(),
+                command.email(),
+                command.username(),
+                passwordEncoder.encode(command.password()),
+                command.phoneNumber(),
+                command.birthday(),
                 MemberGrade.ROLE_COMMON,
                 SocialProvider.NORMAL
         );

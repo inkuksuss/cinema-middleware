@@ -3,7 +3,6 @@ package com.example.cinema_middleware.v1.service;
 import com.example.cinema_middleware.v1.domain.entity.Theater;
 import com.example.cinema_middleware.v1.repository.TheaterRepository;
 import com.example.cinema_middleware.v1.service.dto.*;
-import com.example.cinema_middleware.v1.service.dto.forms.BulkAddSeatForm;
 import com.example.cinema_middleware.v1.support.exception.DuplicateValueException;
 import com.example.cinema_middleware.v1.support.exception.TargetNotFoundException;
 import com.example.cinema_middleware.v1.support.exception.TheaterInUseException;
@@ -71,12 +70,12 @@ public class AdminTheaterService {
         return new TheaterDto.SeatMap(theaterId, seatList);
     }
 
-    public void bulkAddSeat(BulkAddSeatForm form) {
-        Assert.notNull(form, "bulkAddSeatForm can not be null");
+    public void bulkAddSeat(TheaterCommand.BulkAddSeat command) {
+        Assert.notNull(command, "bulkAddSeatCommand can not be null");
 
-        Theater theater = theaterRepository.getReferenceById(form.getTheaterId());
+        Theater theater = theaterRepository.getReferenceById(command.theaterId());
 
-        seatService.saveAll(theater, form.getSeatList());
+        seatService.saveAll(theater, command.seatList());
     }
 
     public void removeSeat(Long seatId) {

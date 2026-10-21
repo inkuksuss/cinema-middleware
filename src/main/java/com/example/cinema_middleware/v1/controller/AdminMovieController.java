@@ -1,13 +1,10 @@
 package com.example.cinema_middleware.v1.controller;
 
-import com.example.cinema_middleware.v1.controller.request.CreateMovieRequest;
-import com.example.cinema_middleware.v1.controller.request.ModifyMovieRequest;
+import com.example.cinema_middleware.v1.controller.request.MovieRequest;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieStatus;
 import com.example.cinema_middleware.v1.service.AdminMovieService;
 import com.example.cinema_middleware.v1.service.dto.*;
-import com.example.cinema_middleware.v1.service.dto.forms.AddMovieForm;
-import com.example.cinema_middleware.v1.service.dto.forms.UpdateMovieForm;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -51,12 +48,9 @@ public class AdminMovieController {
     @PostMapping(value = "/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Result<Void>> createMovie(
             @RequestPart MultipartFile file,
-            @RequestPart @Validated CreateMovieRequest request
+            @RequestPart @Validated MovieRequest.Create request
     ) {
-        AddMovieForm form = request.toForm();
-        form.setThumbnail(file);
-
-        movieService.addMovie(form);
+        movieService.addMovie(request.toCommand(file));
 
         return ResponseEntity
                 .ok()
@@ -66,12 +60,9 @@ public class AdminMovieController {
     @PutMapping("/{movieId}")
     public ResponseEntity<Result<Void>> modifyMovie(
             @PathVariable Long movieId,
-            @RequestBody @Validated ModifyMovieRequest request
+            @RequestBody @Validated MovieRequest.Modify request
     ) {
-        UpdateMovieForm form = request.toForm();
-        form.setMovieId(movieId);
-
-        movieService.update(form);
+        movieService.update(request.toCommand(movieId));
 
         return ResponseEntity
                 .ok()

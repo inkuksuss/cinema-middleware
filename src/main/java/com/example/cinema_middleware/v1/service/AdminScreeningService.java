@@ -3,7 +3,7 @@ package com.example.cinema_middleware.v1.service;
 import com.example.cinema_middleware.v1.domain.entity.Screening;
 import com.example.cinema_middleware.v1.repository.ScreeningRepository;
 import com.example.cinema_middleware.v1.service.dto.ScreeningDto;
-import com.example.cinema_middleware.v1.service.dto.forms.UpdateScreeningForm;
+import com.example.cinema_middleware.v1.service.dto.ScreeningCommand;
 import com.example.cinema_middleware.v1.support.exception.ScreeningHaveReservationException;
 import com.example.cinema_middleware.v1.support.exception.TargetNotFoundException;
 import jakarta.annotation.Nullable;
@@ -57,14 +57,14 @@ public class AdminScreeningService {
     }
 
     @Transactional
-    public void update(UpdateScreeningForm form) {
-        Assert.notNull(form, "updateScreeningForm can not be null");
+    public void update(ScreeningCommand.Update command) {
+        Assert.notNull(command, "updateScreeningCommand can not be null");
 
-        checkEditable(form.getScreeningId());
+        checkEditable(command.screeningId());
 
-        Screening screening = screeningRepository.findById(form.getScreeningId())
+        Screening screening = screeningRepository.findById(command.screeningId())
                 .orElseThrow(() -> { throw new TargetNotFoundException(); });
-        screening.setStatus(form.getStatus());
+        screening.setStatus(command.status());
     }
 
     public void remove(Long screeningId) {

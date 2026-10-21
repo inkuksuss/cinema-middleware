@@ -1,6 +1,6 @@
 package com.example.cinema_middleware.v1.controller;
 
-import com.example.cinema_middleware.v1.controller.request.CreateReservationRequest;
+import com.example.cinema_middleware.v1.controller.request.ReservationRequest;
 import com.example.cinema_middleware.v1.controller.response.ResponseCode;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.MovieReservationService;
@@ -29,7 +29,7 @@ public class MovieReservationController {
     private final MovieReservationService movieReservationService;
 
     @PostMapping("/")
-    public ResponseEntity<Result<ReservationDto.Detail>> createReservation(@RequestBody @Validated CreateReservationRequest request) {
+    public ResponseEntity<Result<ReservationDto.Detail>> createReservation(@RequestBody @Validated ReservationRequest.Create request) {
         try {
             ReservationDto.Detail result =
                     movieReservationService.addReservation(request.screeningId(), request.theaterSeatIdList());

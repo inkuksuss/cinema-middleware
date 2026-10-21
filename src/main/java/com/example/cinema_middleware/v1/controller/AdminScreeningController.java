@@ -1,11 +1,10 @@
 package com.example.cinema_middleware.v1.controller;
 
-import com.example.cinema_middleware.v1.controller.request.ModifyScreeningRequest;
+import com.example.cinema_middleware.v1.controller.request.ScreeningRequest;
 import com.example.cinema_middleware.v1.controller.response.ResponseCode;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.AdminScreeningService;
 import com.example.cinema_middleware.v1.service.dto.ScreeningDto;
-import com.example.cinema_middleware.v1.service.dto.forms.UpdateScreeningForm;
 import com.example.cinema_middleware.v1.support.exception.ScreeningHaveReservationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -52,13 +51,10 @@ public class AdminScreeningController {
     @PatchMapping("/{screeningId}")
     public ResponseEntity<Result<Void>> modifyScreening(
             @PathVariable Long screeningId,
-            @RequestBody @Validated ModifyScreeningRequest request
+            @RequestBody @Validated ScreeningRequest.Modify request
     ) {
-        UpdateScreeningForm form = request.toForm();
-        form.setScreeningId(screeningId);
-
         try {
-            screeningService.update(form);
+            screeningService.update(request.toCommand(screeningId));
 
             return ResponseEntity
                     .ok()
