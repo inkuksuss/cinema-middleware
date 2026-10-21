@@ -6,9 +6,8 @@ import com.example.cinema_middleware.v1.controller.request.ModifyTheaterRequest;
 import com.example.cinema_middleware.v1.controller.response.ResponseCode;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.AdminTheaterService;
-import com.example.cinema_middleware.v1.service.dto.TheaterSummary;
+import com.example.cinema_middleware.v1.service.dto.TheaterDto;
 import com.example.cinema_middleware.v1.service.dto.forms.BulkAddSeatForm;
-import com.example.cinema_middleware.v1.service.dto.TheaterSeatMapper;
 import com.example.cinema_middleware.v1.support.exception.SeatInUseException;
 import com.example.cinema_middleware.v1.support.exception.TheaterInUseException;
 import lombok.RequiredArgsConstructor;
@@ -28,10 +27,10 @@ public class AdminTheaterController {
     private final AdminTheaterService theaterService;
 
     @GetMapping("/")
-    public ResponseEntity<Result<Page<TheaterSummary>>> getTheaterSummary(
+    public ResponseEntity<Result<Page<TheaterDto.Summary>>> getTheaterSummary(
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 7) Pageable pageable
     ) {
-        Page<TheaterSummary> result = theaterService.getTheaterSummary(pageable);
+        Page<TheaterDto.Summary> result = theaterService.getTheaterSummary(pageable);
 
         return ResponseEntity
                 .ok()
@@ -76,8 +75,8 @@ public class AdminTheaterController {
     }
 
     @GetMapping("/{theaterId}/seat")
-    public ResponseEntity<Result<TheaterSeatMapper>> getTheaterSeat(@PathVariable Long theaterId) {
-        TheaterSeatMapper result = theaterService.getAllAtTheater(theaterId);
+    public ResponseEntity<Result<TheaterDto.SeatMap>> getTheaterSeat(@PathVariable Long theaterId) {
+        TheaterDto.SeatMap result = theaterService.getAllAtTheater(theaterId);
 
         return ResponseEntity
                 .ok()

@@ -4,8 +4,8 @@ import com.example.cinema_middleware.v1.domain.entity.Theater;
 import com.example.cinema_middleware.v1.domain.entity.TheaterSeat;
 import com.example.cinema_middleware.v1.repository.MovieReservationSeatRepository;
 import com.example.cinema_middleware.v1.repository.TheaterSeatRepository;
+import com.example.cinema_middleware.v1.service.dto.TheaterDto;
 import com.example.cinema_middleware.v1.service.dto.forms.BulkAddSeatForm;
-import com.example.cinema_middleware.v1.service.dto.AdminSeatSummary;
 import com.example.cinema_middleware.v1.support.exception.SeatInUseException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,12 +21,12 @@ public class AdminSeatService {
     private final TheaterSeatRepository seatRepository;
     private final MovieReservationSeatRepository reservationSeatRepository;
 
-    public List<AdminSeatSummary> getAllByTheaterId(Long theaterId) {
+    public List<TheaterDto.SeatSummary> getAllByTheaterId(Long theaterId) {
         Assert.notNull(theaterId, "theaterId can not be null");
 
         return seatRepository.findAllByTheaterId(theaterId)
                 .stream()
-                .map(ts -> AdminSeatSummary.from(ts))
+                .map(ts -> TheaterDto.SeatSummary.from(ts))
                 .toList();
     }
 

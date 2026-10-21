@@ -18,9 +18,9 @@ public class ScreeningSummary {
 
     private Long id;
 
-    private MovieSummary movieSummary;
+    private MovieDto.Summary movieSummary;
 
-    private TheaterSummary theaterSummary;
+    private TheaterDto.Summary theaterSummary;
 
     private LocalDate startDate;
 

@@ -25,11 +25,11 @@ public class AdminTheaterService {
     private final AdminSeatService seatService;
     private final AdminScreeningService screeningService;
 
-    public Page<TheaterSummary> getTheaterSummary(Pageable pageable) {
+    public Page<TheaterDto.Summary> getTheaterSummary(Pageable pageable) {
         Assert.notNull(pageable, "pageable can not be null");
 
         return theaterRepository.findTheaterPage(pageable)
-                .map(t -> TheaterSummary.from(t));
+                .map(t -> TheaterDto.Summary.from(t));
     }
 
     public void addTheater(String name, String description) {
@@ -63,12 +63,12 @@ public class AdminTheaterService {
         theaterRepository.deleteById(theaterId);
     }
 
-    public TheaterSeatMapper getAllAtTheater(Long theaterId) {
+    public TheaterDto.SeatMap getAllAtTheater(Long theaterId) {
         Assert.notNull(theaterId, "theaterId can not be null");
 
-        List<AdminSeatSummary> seatList = seatService.getAllByTheaterId(theaterId);
+        List<TheaterDto.SeatSummary> seatList = seatService.getAllByTheaterId(theaterId);
 
-        return new TheaterSeatMapper(theaterId, seatList);
+        return new TheaterDto.SeatMap(theaterId, seatList);
     }
 
     public void bulkAddSeat(BulkAddSeatForm form) {

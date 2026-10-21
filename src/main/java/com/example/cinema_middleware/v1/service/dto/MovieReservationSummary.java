@@ -23,7 +23,7 @@ public class MovieReservationSummary {
 
     private ReservationStatus status;
 
-    private MovieSummary movieSummary;
+    private MovieDto.Summary movieSummary;
 
     private ScreeningSummary screeningSummary;
 

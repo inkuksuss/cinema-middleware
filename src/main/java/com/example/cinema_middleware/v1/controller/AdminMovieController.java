@@ -27,12 +27,12 @@ public class AdminMovieController {
     private final AdminMovieService movieService;
 
     @GetMapping("/")
-    public ResponseEntity<Result<Page<MovieSummary>>> getMovieSummary(
+    public ResponseEntity<Result<Page<MovieDto.Summary>>> getMovieSummary(
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 7) Pageable pageable,
             @RequestParam(required = false) String title,
             @RequestParam(required = false) MovieStatus status
             ) {
-        Page<MovieSummary> result = movieService.getMovieSummary(pageable, title, status);
+        Page<MovieDto.Summary> result = movieService.getMovieSummary(pageable, title, status);
 
         return ResponseEntity
                 .ok()
@@ -40,8 +40,8 @@ public class AdminMovieController {
     }
 
     @GetMapping("/{movieId}")
-    public ResponseEntity<Result<MovieDetail>> getMovieDetail(@PathVariable Long movieId) {
-        MovieDetail result = movieService.getMovieDetail(movieId);
+    public ResponseEntity<Result<MovieDto.Detail>> getMovieDetail(@PathVariable Long movieId) {
+        MovieDto.Detail result = movieService.getMovieDetail(movieId);
 
         return ResponseEntity
                 .ok()

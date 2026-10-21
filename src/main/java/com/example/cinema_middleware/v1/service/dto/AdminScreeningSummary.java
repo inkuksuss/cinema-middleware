@@ -17,9 +17,9 @@ public class AdminScreeningSummary {
 
     private Long screeningId;
 
-    private MovieSummary movieSummary;
+    private MovieDto.Summary movieSummary;
 
-    private TheaterSummary theaterSummary;
+    private TheaterDto.Summary theaterSummary;
 
     private LocalDate startDate;
 
@@ -33,8 +33,8 @@ public class AdminScreeningSummary {
         AdminScreeningSummary screeningSummary = new AdminScreeningSummary();
         screeningSummary.screeningId = row.getScreeningId();
 
-        screeningSummary.movieSummary = MovieSummary.of(row.getMovieId(), row.getMovieTitle());
-        screeningSummary.theaterSummary = TheaterSummary.of(row.getTheaterId(), row.getTheaterName());
+        screeningSummary.movieSummary = MovieDto.Summary.of(row.getMovieId(), row.getMovieTitle());
+        screeningSummary.theaterSummary = TheaterDto.Summary.of(row.getTheaterId(), row.getTheaterName());
 
         screeningSummary.startDate = row.getStartDate();
         screeningSummary.startAt = row.getStartAt();

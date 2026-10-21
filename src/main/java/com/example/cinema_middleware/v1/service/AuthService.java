@@ -7,7 +7,7 @@ import com.example.cinema_middleware.v1.repository.MemberRepository;
 import com.example.cinema_middleware.v1.security.MemberPrincipal;
 import com.example.cinema_middleware.v1.security.AuthorizationConst;
 import com.example.cinema_middleware.v1.security.jwt.JwtTokenProvider;
-import com.example.cinema_middleware.v1.service.dto.TokenIssuance;
+import com.example.cinema_middleware.v1.service.dto.AuthDto;
 import com.example.cinema_middleware.v1.support.exception.InvalidAccessTokenException;
 import com.example.cinema_middleware.v1.support.exception.InvalidRefreshTokenException;
 import lombok.RequiredArgsConstructor;
@@ -32,14 +32,14 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
 
 
-    public TokenIssuance login(String email, String password) {
+    public AuthDto.TokenIssuance login(String email, String password) {
         Authentication authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, password));
         MemberPrincipal principal = (MemberPrincipal) authenticate.getPrincipal();
 
         return this.issueTokens(principal.getId(), principal.getUsername(), principal.getRole());
     }
 
-    public TokenIssuance reissue(String refreshToken) {
+    public AuthDto.TokenIssuance reissue(String refreshToken) {
         if (!jwtTokenProvider.isValid(refreshToken)) {
             throw new InvalidRefreshTokenException();
         }
@@ -115,7 +115,7 @@ public class AuthService {
     }
 
 
-    private TokenIssuance issueTokens(Long memberId, String email, String grade) {
+    private AuthDto.TokenIssuance issueTokens(Long memberId, String email, String grade) {
         String accessToken = jwtTokenProvider.createAccessToken(memberId, email, grade);
         String refreshToken = jwtTokenProvider.createRefreshToken(memberId);
 
@@ -125,7 +125,7 @@ public class AuthService {
                 Duration.ofSeconds(jwtTokenProvider.getJwtProperties().refreshTokenExpireSeconds())
         );
 
-        return TokenIssuance.of(
+        return AuthDto.TokenIssuance.of(
                 accessToken,
                 refreshToken,
                 AuthorizationConst.PREFIX,

@@ -27,19 +27,19 @@ public class AdminMovieService {
         this.fileService = fileService;
     }
 
-    public Page<MovieSummary> getMovieSummary(Pageable pageable, @Nullable String title, @Nullable MovieStatus status) {
+    public Page<MovieDto.Summary> getMovieSummary(Pageable pageable, @Nullable String title, @Nullable MovieStatus status) {
         Page<Movie> moviePage = movieRepository.findMoviePage(pageable, title, status);
 
-        return moviePage.map(MovieSummary::from);
+        return moviePage.map(MovieDto.Summary::from);
     }
 
-    public MovieDetail getMovieDetail(Long movieId) {
+    public MovieDto.Detail getMovieDetail(Long movieId) {
         if (movieId == null) throw new IllegalArgumentException();
 
         Movie movie = movieRepository.findById(movieId)
                 .orElseThrow(() -> { throw new TargetNotFoundException(); });
 
-        return MovieDetail.from(movie);
+        return MovieDto.Detail.from(movie);
     }
 
     @Transactional

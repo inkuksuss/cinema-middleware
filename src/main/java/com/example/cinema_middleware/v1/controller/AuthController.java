@@ -5,7 +5,7 @@ import com.example.cinema_middleware.v1.controller.request.SignInRequest;
 import com.example.cinema_middleware.v1.controller.response.ResponseCode;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.AuthService;
-import com.example.cinema_middleware.v1.service.dto.TokenIssuance;
+import com.example.cinema_middleware.v1.service.dto.AuthDto;
 import com.example.cinema_middleware.v1.support.exception.InvalidAccessTokenException;
 import com.example.cinema_middleware.v1.support.exception.InvalidRefreshTokenException;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +23,8 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/sign-in")
-    public ResponseEntity<Result<TokenIssuance>> signIn(@RequestBody @Validated SignInRequest request) {
-        TokenIssuance result = authService.login(request.email(), request.password());
+    public ResponseEntity<Result<AuthDto.TokenIssuance>> signIn(@RequestBody @Validated SignInRequest request) {
+        AuthDto.TokenIssuance result = authService.login(request.email(), request.password());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -32,9 +32,9 @@ public class AuthController {
     }
 
     @PostMapping("/reissue")
-    public ResponseEntity<Result<TokenIssuance>> reissue(@RequestBody @Validated ReissueRequest request) {
+    public ResponseEntity<Result<AuthDto.TokenIssuance>> reissue(@RequestBody @Validated ReissueRequest request) {
         try {
-            TokenIssuance result = authService.reissue(request.refreshToken());
+            AuthDto.TokenIssuance result = authService.reissue(request.refreshToken());
 
             return ResponseEntity
                     .status(HttpStatus.OK)
