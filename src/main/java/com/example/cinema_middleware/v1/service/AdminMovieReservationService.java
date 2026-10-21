@@ -3,8 +3,7 @@ package com.example.cinema_middleware.v1.service;
 import com.example.cinema_middleware.v1.repository.MovieReservationRepository;
 import com.example.cinema_middleware.v1.repository.dto.ReservationAdminRow;
 import com.example.cinema_middleware.v1.repository.dto.search.AdminReservationSummarySearch;
-import com.example.cinema_middleware.v1.service.dto.AdminMovieReservationDetail;
-import com.example.cinema_middleware.v1.service.dto.AdminMovieReservationSummary;
+import com.example.cinema_middleware.v1.service.dto.ReservationDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -22,14 +21,14 @@ public class AdminMovieReservationService {
         return reservationRepository.existsAliveByScreeningId(screeningId);
     }
 
-    // TODO: ReservationAdminRow -> AdminMovieReservationSummary 매핑 구현 필요
+    // TODO: ReservationAdminRow -> ReservationDto.AdminSummary 매핑 구현 필요
     //  (조회 쿼리는 reservationRepository.findReservationAdminRow(search) 사용)
-    public Page<AdminMovieReservationSummary> getReservationSummary(AdminReservationSummarySearch search) {
+    public Page<ReservationDto.AdminSummary> getReservationSummary(AdminReservationSummarySearch search) {
         throw new UnsupportedOperationException("미구현");
     }
 
     // TODO: 예매 상세 조회 구현 필요
-    public AdminMovieReservationDetail getReservationDetail(Long reservationId) {
+    public ReservationDto.AdminDetail getReservationDetail(Long reservationId) {
         throw new UnsupportedOperationException("미구현");
     }
 

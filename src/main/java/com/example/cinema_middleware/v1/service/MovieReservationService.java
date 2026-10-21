@@ -35,7 +35,7 @@ public class MovieReservationService {
     private final TheaterSeatRepository theaterSeatRepository;
 
     @Transactional
-    public MovieReservationDetail addReservation(Long screeningId, List<Long> theaterSeatIdList) {
+    public ReservationDto.Detail addReservation(Long screeningId, List<Long> theaterSeatIdList) {
         Member memberRef = authService.getMemberReference();
         Screening screeningRef = screeningRepository.getReferenceById(screeningId);
 
@@ -65,11 +65,11 @@ public class MovieReservationService {
         movieReservationRepository.save(createdReservation);
         reservationSeatList.forEach(rs -> rs.setReservation(createdReservation));
 
-        return MovieReservationDetail.from(createdReservation);
+        return ReservationDto.Detail.from(createdReservation);
     }
 
     // TODO
-    public AdminMovieReservationDetail confirmReservation(Long reservationId) {
+    public ReservationDto.AdminDetail confirmReservation(Long reservationId) {
         Member member = authService.getMemberReference();
 
         MovieReservation movieReservation = movieReservationRepository.findById(reservationId)
@@ -81,32 +81,24 @@ public class MovieReservationService {
 
         movieReservation.confirm();
 
-        return AdminMovieReservationDetail.from(movieReservation);
+        return ReservationDto.AdminDetail.from(movieReservation);
     }
 
-    public Page<MovieReservationSummary> getReservationPageAtMember(Pageable pageable, @Nullable ReservationStatus status) {
+    public Page<ReservationDto.Summary> getReservationPageAtMember(Pageable pageable, @Nullable ReservationStatus status) {
         return movieReservationRepository.findReservationPageAtMember(pageable, authService.getMemberId(), status)
-                .map(movieReservation -> {
-                    MovieReservationSummary movieReservationSummary = MovieReservationSummary.from(movieReservation);
-                    movieReservationSummary.setMovieSummary(MovieDto.Summary.from(movieReservation.getScreening().getMovie()));
-                    movieReservationSummary.setScreeningSummary(ScreeningDto.Summary.from(movieReservation.getScreening()));
-
-                    return movieReservationSummary;
-                });
+                .map(ReservationDto.Summary::from);
     }
 
-    public MovieReservationDetail getReservationDetail(Long reservationId) {
+    public ReservationDto.Detail getReservationDetail(Long reservationId) {
         MovieReservation findReservation = movieReservationRepository.findDetailById(reservationId)
                 .orElseThrow(() -> { throw new TargetNotFoundException("존재하지 않는 티켓 정보입니다."); });
 
         if (!(authService.getMemberId()).equals(findReservation.getMember().getId())) throw new AccessDeniedException("잘못된 접근입니다.");
 
-        MovieReservationDetail movieReservationDetail = MovieReservationDetail.from(findReservation);
-
-        findReservation.getPaymentList().stream()
+        MoviePayment latestPayment = findReservation.getPaymentList().stream()
                 .max(Comparator.comparing(MoviePayment::getCreatedAt))
-                .ifPresent(payment -> movieReservationDetail.setPaymentSummary(PaymentSummary.from(payment)));
+                .orElse(null);
 
-        return movieReservationDetail;
+        return ReservationDto.Detail.of(findReservation, latestPayment);
     }
 }

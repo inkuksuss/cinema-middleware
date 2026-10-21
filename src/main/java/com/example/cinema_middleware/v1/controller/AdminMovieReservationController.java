@@ -4,8 +4,7 @@ import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
 import com.example.cinema_middleware.v1.repository.dto.search.AdminReservationSummarySearch;
 import com.example.cinema_middleware.v1.service.AdminMovieReservationService;
-import com.example.cinema_middleware.v1.service.dto.AdminMovieReservationDetail;
-import com.example.cinema_middleware.v1.service.dto.AdminMovieReservationSummary;
+import com.example.cinema_middleware.v1.service.dto.ReservationDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,7 +23,7 @@ public class AdminMovieReservationController {
     private final AdminMovieReservationService reservationService;
 
     @GetMapping("/")
-    public ResponseEntity<Result<Page<AdminMovieReservationSummary>>> getReservationSummary(
+    public ResponseEntity<Result<Page<ReservationDto.AdminSummary>>> getReservationSummary(
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 7) Pageable pageable,
             @RequestParam LocalDate startDate,
             @RequestParam LocalDate endDate,
@@ -35,7 +34,7 @@ public class AdminMovieReservationController {
         search.setStatus(status);
         search.setCode(code);
 
-        Page<AdminMovieReservationSummary> result = reservationService.getReservationSummary(search);
+        Page<ReservationDto.AdminSummary> result = reservationService.getReservationSummary(search);
 
         return ResponseEntity
                 .ok()
@@ -43,8 +42,8 @@ public class AdminMovieReservationController {
     }
 
     @GetMapping("/{reservationId}")
-    public ResponseEntity<Result<AdminMovieReservationDetail>> getReservationDetail(@PathVariable Long reservationId) {
-        AdminMovieReservationDetail result = reservationService.getReservationDetail(reservationId);
+    public ResponseEntity<Result<ReservationDto.AdminDetail>> getReservationDetail(@PathVariable Long reservationId) {
+        ReservationDto.AdminDetail result = reservationService.getReservationDetail(reservationId);
 
         return ResponseEntity
                 .ok()

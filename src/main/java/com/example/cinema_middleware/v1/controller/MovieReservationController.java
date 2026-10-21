@@ -4,9 +4,7 @@ import com.example.cinema_middleware.v1.controller.request.CreateReservationRequ
 import com.example.cinema_middleware.v1.controller.response.ResponseCode;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.MovieReservationService;
-import com.example.cinema_middleware.v1.service.dto.AdminMovieReservationDetail;
-import com.example.cinema_middleware.v1.service.dto.MovieReservationDetail;
-import com.example.cinema_middleware.v1.service.dto.MovieReservationSummary;
+import com.example.cinema_middleware.v1.service.dto.ReservationDto;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
 import com.example.cinema_middleware.v1.support.exception.ReservationExpiredException;
 import com.example.cinema_middleware.v1.support.exception.ScreeningNotOnSaleException;
@@ -31,9 +29,9 @@ public class MovieReservationController {
     private final MovieReservationService movieReservationService;
 
     @PostMapping("/")
-    public ResponseEntity<Result<MovieReservationDetail>> createReservation(@RequestBody @Validated CreateReservationRequest request) {
+    public ResponseEntity<Result<ReservationDto.Detail>> createReservation(@RequestBody @Validated CreateReservationRequest request) {
         try {
-            MovieReservationDetail result =
+            ReservationDto.Detail result =
                     movieReservationService.addReservation(request.screeningId(), request.theaterSeatIdList());
 
             return ResponseEntity
@@ -63,9 +61,9 @@ public class MovieReservationController {
     }
 
     @PostMapping("/{reservationId}/confirm")
-    public ResponseEntity<Result<AdminMovieReservationDetail>> confirmReservation(@PathVariable Long reservationId) {
+    public ResponseEntity<Result<ReservationDto.AdminDetail>> confirmReservation(@PathVariable Long reservationId) {
         try {
-            AdminMovieReservationDetail result = movieReservationService.confirmReservation(reservationId);
+            ReservationDto.AdminDetail result = movieReservationService.confirmReservation(reservationId);
 
             return ResponseEntity
                     .ok()
@@ -94,11 +92,11 @@ public class MovieReservationController {
     }
 
     @GetMapping("/my")
-    public ResponseEntity<Result<Page<MovieReservationSummary>>> getMyReservation(
+    public ResponseEntity<Result<Page<ReservationDto.Summary>>> getMyReservation(
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 7) Pageable pageable,
             @RequestParam(required = false) ReservationStatus status
     ) {
-        Page<MovieReservationSummary> result =
+        Page<ReservationDto.Summary> result =
                 movieReservationService.getReservationPageAtMember(pageable, status);
 
         return ResponseEntity
@@ -107,12 +105,12 @@ public class MovieReservationController {
     }
 
     @GetMapping("/{reservationId}/detail")
-    public ResponseEntity<Result<MovieReservationDetail>> getReservationDetail(
+    public ResponseEntity<Result<ReservationDto.Detail>> getReservationDetail(
             @PathVariable Long reservationId
     ) {
         if (reservationId == null) throw new IllegalArgumentException("예매 고유값이 옳바르지 않습니다.");
 
-        MovieReservationDetail result = movieReservationService.getReservationDetail(reservationId);
+        ReservationDto.Detail result = movieReservationService.getReservationDetail(reservationId);
 
         return ResponseEntity
                 .ok()
