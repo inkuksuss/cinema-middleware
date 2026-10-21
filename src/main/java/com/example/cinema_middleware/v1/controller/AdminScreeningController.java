@@ -4,8 +4,7 @@ import com.example.cinema_middleware.v1.controller.request.ModifyScreeningReques
 import com.example.cinema_middleware.v1.controller.response.ResponseCode;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.AdminScreeningService;
-import com.example.cinema_middleware.v1.service.dto.AdminScreeningDetail;
-import com.example.cinema_middleware.v1.service.dto.AdminScreeningSummary;
+import com.example.cinema_middleware.v1.service.dto.ScreeningDto;
 import com.example.cinema_middleware.v1.service.dto.forms.UpdateScreeningForm;
 import com.example.cinema_middleware.v1.support.exception.ScreeningHaveReservationException;
 import lombok.RequiredArgsConstructor;
@@ -27,14 +26,14 @@ public class AdminScreeningController {
     private final AdminScreeningService screeningService;
 
     @GetMapping("/")
-    public ResponseEntity<Result<Page<AdminScreeningSummary>>> getScreeningSummary(
+    public ResponseEntity<Result<Page<ScreeningDto.AdminSummary>>> getScreeningSummary(
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 7) Pageable pageable,
             @RequestParam LocalDate targetDate,
             @RequestParam(required = false) Long theaterId,
             @RequestParam(required = false) Long movieId
 
     ) {
-        Page<AdminScreeningSummary> result = screeningService.getSummary(pageable, targetDate, theaterId, movieId);
+        Page<ScreeningDto.AdminSummary> result = screeningService.getSummary(pageable, targetDate, theaterId, movieId);
 
         return ResponseEntity
                 .ok()
@@ -42,8 +41,8 @@ public class AdminScreeningController {
     }
 
     @GetMapping("/{screeningId}")
-    public ResponseEntity<Result<AdminScreeningDetail>> getScreeningDetail(@PathVariable Long screeningId) {
-        AdminScreeningDetail result = screeningService.getDetail(screeningId);
+    public ResponseEntity<Result<ScreeningDto.AdminDetail>> getScreeningDetail(@PathVariable Long screeningId) {
+        ScreeningDto.AdminDetail result = screeningService.getDetail(screeningId);
 
         return ResponseEntity
                 .ok()

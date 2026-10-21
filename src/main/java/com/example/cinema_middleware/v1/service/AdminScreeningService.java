@@ -2,8 +2,7 @@ package com.example.cinema_middleware.v1.service;
 
 import com.example.cinema_middleware.v1.domain.entity.Screening;
 import com.example.cinema_middleware.v1.repository.ScreeningRepository;
-import com.example.cinema_middleware.v1.service.dto.AdminScreeningDetail;
-import com.example.cinema_middleware.v1.service.dto.AdminScreeningSummary;
+import com.example.cinema_middleware.v1.service.dto.ScreeningDto;
 import com.example.cinema_middleware.v1.service.dto.forms.UpdateScreeningForm;
 import com.example.cinema_middleware.v1.support.exception.ScreeningHaveReservationException;
 import com.example.cinema_middleware.v1.support.exception.TargetNotFoundException;
@@ -31,7 +30,7 @@ public class AdminScreeningService {
         return screeningRepository.existsAlreadyUsing(theaterId, now.toLocalDate(), now.toLocalTime());
     }
 
-    public Page<AdminScreeningSummary> getSummary(
+    public Page<ScreeningDto.AdminSummary> getSummary(
             Pageable pageable,
             LocalDate targetDate,
             @Nullable Long theaterId,
@@ -45,16 +44,16 @@ public class AdminScreeningService {
                 targetDate,
                 theaterId,
                 movieId
-                ).map(AdminScreeningSummary::from);
+                ).map(ScreeningDto.AdminSummary::from);
     }
 
-    public AdminScreeningDetail getDetail(Long screeningId) {
+    public ScreeningDto.AdminDetail getDetail(Long screeningId) {
         Assert.notNull(screeningId, "screeningId can not be null");
 
         Screening screening = screeningRepository.findDetailById(screeningId)
                 .orElseThrow(() -> { throw new TargetNotFoundException(); });
 
-        return AdminScreeningDetail.from(screening);
+        return ScreeningDto.AdminDetail.from(screening);
     }
 
     @Transactional

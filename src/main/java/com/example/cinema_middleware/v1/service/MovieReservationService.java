@@ -89,7 +89,7 @@ public class MovieReservationService {
                 .map(movieReservation -> {
                     MovieReservationSummary movieReservationSummary = MovieReservationSummary.from(movieReservation);
                     movieReservationSummary.setMovieSummary(MovieDto.Summary.from(movieReservation.getScreening().getMovie()));
-                    movieReservationSummary.setScreeningSummary(ScreeningSummary.from(movieReservation.getScreening()));
+                    movieReservationSummary.setScreeningSummary(ScreeningDto.Summary.from(movieReservation.getScreening()));
 
                     return movieReservationSummary;
                 });

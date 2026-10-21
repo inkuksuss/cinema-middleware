@@ -25,7 +25,7 @@ public class MovieReservationSummary {
 
     private MovieDto.Summary movieSummary;
 
-    private ScreeningSummary screeningSummary;
+    private ScreeningDto.Summary screeningSummary;
 
     public static MovieReservationSummary from(MovieReservation movieReservation) {
         Assert.notNull(movieReservation, "movieReservation can not be null");

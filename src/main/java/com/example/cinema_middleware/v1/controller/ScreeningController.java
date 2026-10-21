@@ -2,8 +2,7 @@ package com.example.cinema_middleware.v1.controller;
 
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.ScreeningService;
-import com.example.cinema_middleware.v1.service.dto.ScreeningSummary;
-import com.example.cinema_middleware.v1.service.dto.ScreeningSeatMapper;
+import com.example.cinema_middleware.v1.service.dto.ScreeningDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -21,11 +20,11 @@ public class ScreeningController {
     private final ScreeningService screeningService;
 
     @GetMapping("/")
-    public ResponseEntity<Result<List<ScreeningSummary>>> getSummary(
+    public ResponseEntity<Result<List<ScreeningDto.Summary>>> getSummary(
             @RequestParam(value = "movieId", required = false) Long movieId,
             @RequestParam("targetDate") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate targetDate
     ) {
-        List<ScreeningSummary> result = screeningService.getScreeningSummaryByDate(targetDate, movieId);
+        List<ScreeningDto.Summary> result = screeningService.getScreeningSummaryByDate(targetDate, movieId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -33,8 +32,8 @@ public class ScreeningController {
     }
 
     @GetMapping("/{screeningId}/seat")
-    public ResponseEntity<Result<ScreeningSeatMapper>> getAllSeatForReservation(@PathVariable Long screeningId) {
-        ScreeningSeatMapper result = screeningService.getAllSeatForReservation(screeningId);
+    public ResponseEntity<Result<ScreeningDto.SeatMap>> getAllSeatForReservation(@PathVariable Long screeningId) {
+        ScreeningDto.SeatMap result = screeningService.getAllSeatForReservation(screeningId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)

@@ -9,7 +9,7 @@ import com.example.cinema_middleware.v1.domain.entity.enums.ScreeningStatus;
 import com.example.cinema_middleware.v1.repository.MovieRepository;
 import com.example.cinema_middleware.v1.repository.ScreeningRepository;
 import com.example.cinema_middleware.v1.repository.TheaterRepository;
-import com.example.cinema_middleware.v1.service.dto.ScreeningSummary;
+import com.example.cinema_middleware.v1.service.dto.ScreeningDto;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -62,7 +62,7 @@ class ScreeningServiceTest {
         screeningRepository.saveAll(list);
 
         //when
-        List<ScreeningSummary> result = screeningService.getScreeningSummaryByDate(now.toLocalDate(), null);
+        List<ScreeningDto.Summary> result = screeningService.getScreeningSummaryByDate(now.toLocalDate(), null);
 
         //then
         Assertions.assertThat(result.size()).isEqualTo(15);
