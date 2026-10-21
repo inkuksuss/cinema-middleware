@@ -1,19 +1,20 @@
 package com.example.cinema_middleware.v1.domain.entity;
 
-import com.example.cinema_middleware.v1.domain.entity.base.BaseEntity;
+import com.example.cinema_middleware.v1.domain.entity.base.DefaultEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.springframework.util.Assert;
 
 @Entity
-@SQLRestriction("is_delete = 'N'")
-@SQLDelete(sql = "UPDATE theater SET is_delete = 'Y' WHERE theater_id = ?")
+@SQLRestriction("is_delete = false")
+@SQLDelete(sql = "UPDATE theater SET is_delete = true WHERE theater_id = ?")
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
-public class Theater extends BaseEntity {
+public class Theater extends DefaultEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "theater_id")
@@ -24,10 +25,16 @@ public class Theater extends BaseEntity {
 
     private String description;
 
+    @Column(nullable = false)
+    private boolean isDelete = false;
+
     // TODO 향후 캐시 or 비정규화할지 정한다 for 남은 자리 계산
 //    private Integer totalSeatCount = 0;
 
     public static Theater create(String name, String description) {
+        Assert.hasText(name, "name can not be null");
+        Assert.hasText(description, "description can not be null");
+
         Theater theater = new Theater();
         theater.name = name;
         theater.description = description;

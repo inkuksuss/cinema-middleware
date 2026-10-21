@@ -1,6 +1,6 @@
 package com.example.cinema_middleware.v1.domain.entity;
 
-import com.example.cinema_middleware.v1.domain.entity.base.SimpleBaseEntity;
+import com.example.cinema_middleware.v1.domain.entity.base.TimeEntity;
 import com.example.cinema_middleware.v1.domain.entity.enums.MemberGrade;
 import com.example.cinema_middleware.v1.domain.entity.enums.SocialProvider;
 import jakarta.persistence.*;
@@ -9,13 +9,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.springframework.util.Assert;
 
 @Entity
-@SQLRestriction("is_delete = 'N'")
-@SQLDelete(sql = "UPDATE member SET is_delete = 'Y' WHERE member_id = ?")
+@SQLRestriction("is_delete = false")
+@SQLDelete(sql = "UPDATE member SET is_delete = true WHERE member_id = ?")
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
-public class Member extends SimpleBaseEntity {
+public class Member extends TimeEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "member_id")
@@ -44,6 +45,9 @@ public class Member extends SimpleBaseEntity {
     @Column(nullable = false, length = 100)
     private SocialProvider socialProvider;
 
+    @Column(nullable = false)
+    private boolean isDelete = false;
+
     public static Member create(
             String email,
             String username,
@@ -53,6 +57,14 @@ public class Member extends SimpleBaseEntity {
             MemberGrade grade,
             SocialProvider socialProvider
     ) {
+        Assert.hasText(email, "email can not be null");
+        Assert.hasText(username, "username can not be null");
+        Assert.hasText(password, "password can not be null");
+        Assert.hasText(phoneNumber, "phoneNumber can not be null");
+        Assert.hasText(birthday, "birthday can not be null");
+        Assert.notNull(grade, "grade can not be null");
+        Assert.notNull(socialProvider, "socialProvider can not be null");
+
         Member member = new Member();
         member.email = email;
         member.username = username;
@@ -63,27 +75,5 @@ public class Member extends SimpleBaseEntity {
         member.socialProvider = socialProvider;
 
         return member;
-    }
-
-
-    public static Member create(
-            String email,
-            String username,
-            String password,
-            String phoneNumber,
-            String birthday
-    ) {
-        return create(email, username, password, phoneNumber, birthday, MemberGrade.ROLE_COMMON, SocialProvider.NORMAL);
-    }
-
-    public static Member create(
-            String email,
-            String username,
-            String password,
-            String phoneNumber,
-            String birthday,
-            SocialProvider socialProvider
-    ) {
-        return create(email, username, password, phoneNumber, birthday, MemberGrade.ROLE_COMMON, socialProvider);
     }
 }

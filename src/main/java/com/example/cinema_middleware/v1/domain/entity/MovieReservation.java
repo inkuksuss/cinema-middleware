@@ -1,6 +1,6 @@
 package com.example.cinema_middleware.v1.domain.entity;
 
-import com.example.cinema_middleware.v1.domain.entity.base.BaseEntity;
+import com.example.cinema_middleware.v1.domain.entity.base.DefaultEntity;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
 import com.example.cinema_middleware.v1.repository.dto.SeatData;
 import com.example.cinema_middleware.v1.support.exception.ReservationExpiredException;
@@ -8,8 +8,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLRestriction;
+import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,11 +18,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Entity
-@SQLRestriction("is_delete = 'N'")
-@SQLDelete(sql = "UPDATE movie_reservation SET is_delete = 'Y' WHERE movie_reservation_id = ?")
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
-public class MovieReservation extends BaseEntity {
+public class MovieReservation extends DefaultEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "movie_reservation_id")
@@ -41,11 +38,11 @@ public class MovieReservation extends BaseEntity {
     @JoinColumn(name = "coupon_issuance_id")
     private CouponIssuance couponIssuance;
 
-    @OneToOne(mappedBy = "reservation")
-    private MoviePayment payment;
-
     @OneToMany(mappedBy = "reservation")
     private List<MovieReservationSeat> reservationSeatList = new ArrayList<>();
+
+    @OneToMany(mappedBy = "reservation")
+    private List<MoviePayment> paymentList = new ArrayList<>();
 
     @Column(nullable = false)
     private String code;
@@ -56,24 +53,27 @@ public class MovieReservation extends BaseEntity {
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal totalPrice;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 100)
-    private ReservationStatus status;
-
     private LocalDateTime expiredAt;
 
     private LocalDateTime canceledAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 100)
+    private ReservationStatus status;
+
     public static MovieReservation create(Member member, Screening screening, List<SeatData> seatDataList) {
+        Assert.notNull(member, "member can not be null");
+        Assert.notNull(screening, "screening can not be null");
+        Assert.notEmpty(seatDataList, "seatDataList can not be empty");
+
         MovieReservation movieReservation = new MovieReservation();
         movieReservation.member = member;
         movieReservation.screening = screening;
         movieReservation.code = UUID.randomUUID().toString();
-        movieReservation.status = ReservationStatus.PENDING;
         movieReservation.expiredAt = LocalDateTime.now().plusHours(1);
-        if (seatDataList == null) throw new IllegalStateException("예약에 지정된 좌석이 없습니다.");
         movieReservation.seatNames = seatDataList.stream().map(s -> s.getSeatRow() + s.getSeatColumn()).collect(Collectors.joining(", "));
         movieReservation.totalPrice = seatDataList.stream().map(SeatData::getPrice).reduce(BigDecimal.ZERO, BigDecimal::add);
+        movieReservation.status = ReservationStatus.PENDING;
 
         return movieReservation;
     }
@@ -81,7 +81,7 @@ public class MovieReservation extends BaseEntity {
     public void confirm() {
         LocalDateTime now = LocalDateTime.now();
 
-        if (!ReservationStatus.PENDING.equals(this.status)) {
+        if (!ReservationStatus.PENDING.equals(this.getStatus())) {
             throw new IllegalStateException();
         }
         if (now.isAfter(this.expiredAt)) {
@@ -100,10 +100,6 @@ public class MovieReservation extends BaseEntity {
 
     private void issueCode() {
         this.code = UUID.randomUUID().toString();
-    }
-
-    public void setStatus(ReservationStatus status) {
-        this.status = status;
     }
 
     public void setExpiredAt(LocalDateTime expiredAt) {

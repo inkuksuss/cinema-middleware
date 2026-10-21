@@ -1,6 +1,6 @@
 package com.example.cinema_middleware.v1.domain.entity;
 
-import com.example.cinema_middleware.v1.domain.entity.base.BaseEntity;
+import com.example.cinema_middleware.v1.domain.entity.base.DefaultEntity;
 import com.example.cinema_middleware.v1.domain.entity.enums.ScreeningStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -8,16 +8,17 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.springframework.util.Assert;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
-@SQLRestriction("is_delete = 'N'")
-@SQLDelete(sql = "UPDATE screening SET is_delete = 'Y' WHERE screening_id = ?")
+@SQLRestriction("status != 'DELETE'")
+@SQLDelete(sql = "UPDATE screening SET status = 'DELETE' WHERE screening_id = ?")
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
-public class Screening extends BaseEntity {
+public class Screening extends DefaultEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "screening_id")
@@ -42,6 +43,12 @@ public class Screening extends BaseEntity {
     private ScreeningStatus status;
 
     public static Screening create(Movie movie, Theater theater, LocalDate startDate, LocalTime startAt, ScreeningStatus status) {
+        Assert.notNull(movie, "movie can not be null");
+        Assert.notNull(theater, "theater can not be null");
+        Assert.notNull(startDate, "startDate can not be null");
+        Assert.notNull(startAt, "startAt can not be null");
+        Assert.notNull(status, "status can not be null");
+
         Screening screening = new Screening();
         screening.movie = movie;
         screening.theater = theater;
