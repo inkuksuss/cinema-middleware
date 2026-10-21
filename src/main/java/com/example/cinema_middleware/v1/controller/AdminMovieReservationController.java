@@ -2,8 +2,8 @@ package com.example.cinema_middleware.v1.controller;
 
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
-import com.example.cinema_middleware.v1.repository.dto.search.AdminReservationSummarySearch;
 import com.example.cinema_middleware.v1.service.AdminMovieReservationService;
+import com.example.cinema_middleware.v1.service.dto.ReservationCommand;
 import com.example.cinema_middleware.v1.service.dto.ReservationDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -30,11 +30,8 @@ public class AdminMovieReservationController {
             @RequestParam(required = false) ReservationStatus status,
             @RequestParam(required = false) String code
     ) {
-        AdminReservationSummarySearch search = new AdminReservationSummarySearch(pageable, startDate, endDate);
-        search.setStatus(status);
-        search.setCode(code);
-
-        Page<ReservationDto.AdminSummary> result = reservationService.getReservationSummary(search);
+        Page<ReservationDto.AdminSummary> result = reservationService.getReservationSummary(
+                new ReservationCommand.AdminSearch(pageable, startDate, endDate, status, code));
 
         return ResponseEntity
                 .ok()
