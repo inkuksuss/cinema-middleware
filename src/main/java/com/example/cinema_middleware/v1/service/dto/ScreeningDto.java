@@ -1,6 +1,10 @@
 package com.example.cinema_middleware.v1.service.dto;
 
+import com.example.cinema_middleware.v1.domain.entity.Movie;
 import com.example.cinema_middleware.v1.domain.entity.Screening;
+import com.example.cinema_middleware.v1.domain.entity.Theater;
+import com.example.cinema_middleware.v1.domain.entity.enums.MovieAgeRating;
+import com.example.cinema_middleware.v1.domain.entity.enums.MovieCategory;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationSeatStatus;
 import com.example.cinema_middleware.v1.domain.entity.enums.ScreeningStatus;
 import com.example.cinema_middleware.v1.domain.entity.enums.SeatGrade;
@@ -17,7 +21,12 @@ import java.util.List;
 
 /**
  * 상영 도메인 서비스 응답 DTO 모음.
- * 사용자용(Summary/Detail)은 잔여 좌석 수를 포함하고, 관리자용(AdminSummary/AdminDetail)은
+ *
+ * <p>응답은 중첩 없는 평탄 구조다. 다른 도메인에서 온 필드는 출처를 드러내도록
+ * {@code movie*} / {@code theater*} 접두사를 붙인다.
+ * 단 컬렉션 필드(1:N)는 스칼라로 펼칠 수 없으므로 평탄화 대상이 아니다.
+ *
+ * <p>사용자용(Summary/Detail)은 잔여 좌석 수를 포함하고, 관리자용(AdminSummary/AdminDetail)은
  * 식별 정보 위주라 필드가 서로 달라 통합하지 않는다.
  * 상위 계층(controller)을 참조하지 않는다.
  */
@@ -29,15 +38,30 @@ public final class ScreeningDto {
     /** 사용자 상영 목록 — 잔여 좌석 수 포함 */
     public record Summary(
             Long id,
-            MovieDto.Summary movieSummary,
-            TheaterDto.Summary theaterSummary,
+
+            Long movieId,
+            String movieTitle,
+            String movieSummary,
+            Integer movieRunningTime,
+            MovieAgeRating movieAgeRating,
+            LocalDate movieReleaseDate,
+            Long movieViewCount,
+            MovieCategory movieCategory,
+            String moviePosterUrl,
+
+            Long theaterId,
+            String theaterName,
+
             LocalDate startDate,
             LocalTime startAt,
             ScreeningStatus status,
             Integer totalSeatCount,
             Integer soldOutSeatCount
     ) {
-        /** 좌석 수가 필요 없는 경우(예: 예매 내역에 끼워 넣는 상영 정보) */
+        /**
+         * 좌석 수가 필요 없는 경우에 사용.
+         * 현재 미사용 — ReservationDto 평탄화로 호출처가 사라졌다.
+         */
         public static Summary from(Screening screening) {
             return of(screening, null);
         }
@@ -47,11 +71,26 @@ public final class ScreeningDto {
             Assert.notNull(screening, "screening can not be null");
 
             // soft delete 된 영화·상영관(@SQLRestriction)은 조인에서 탈락해 null 일 수 있다.
-            // 지난 예매 내역은 조회되어야 하므로 해당 항목만 비워 응답한다.
+            // 지난 내역은 조회되어야 하므로 해당 항목만 비워 응답한다.
+            Movie movie = screening.getMovie();
+            Theater theater = screening.getTheater();
+
             return new Summary(
                     screening.getId(),
-                    screening.getMovie() == null ? null : MovieDto.Summary.from(screening.getMovie()),
-                    screening.getTheater() == null ? null : TheaterDto.Summary.from(screening.getTheater()),
+
+                    movie == null ? null : movie.getId(),
+                    movie == null ? null : movie.getTitle(),
+                    movie == null ? null : movie.getSummary(),
+                    movie == null ? null : movie.getRunningTime(),
+                    movie == null ? null : movie.getAgeRating(),
+                    movie == null ? null : movie.getReleaseDate(),
+                    movie == null ? null : movie.getViewCount(),
+                    movie == null ? null : movie.getCategory(),
+                    movie == null ? null : movie.getPosterUrl(),
+
+                    theater == null ? null : theater.getId(),
+                    theater == null ? null : theater.getName(),
+
                     screening.getStartDate(),
                     screening.getStartAt(),
                     screening.getStatus(),
@@ -64,8 +103,20 @@ public final class ScreeningDto {
     /** 사용자 상영 상세 — 잔여 좌석 수 포함 */
     public record Detail(
             Long id,
-            MovieDto.Summary movieSummary,
-            TheaterDto.Summary theaterSummary,
+
+            Long movieId,
+            String movieTitle,
+            String movieSummary,
+            Integer movieRunningTime,
+            MovieAgeRating movieAgeRating,
+            LocalDate movieReleaseDate,
+            Long movieViewCount,
+            MovieCategory movieCategory,
+            String moviePosterUrl,
+
+            Long theaterId,
+            String theaterName,
+
             LocalDate startDate,
             LocalTime startAt,
             ScreeningStatus status,
@@ -76,10 +127,25 @@ public final class ScreeningDto {
             Assert.notNull(screening, "screening can not be null");
 
             // soft delete 된 영화·상영관은 조인에서 탈락해 null 일 수 있다(Summary 와 동일)
+            Movie movie = screening.getMovie();
+            Theater theater = screening.getTheater();
+
             return new Detail(
                     screening.getId(),
-                    screening.getMovie() == null ? null : MovieDto.Summary.from(screening.getMovie()),
-                    screening.getTheater() == null ? null : TheaterDto.Summary.from(screening.getTheater()),
+
+                    movie == null ? null : movie.getId(),
+                    movie == null ? null : movie.getTitle(),
+                    movie == null ? null : movie.getSummary(),
+                    movie == null ? null : movie.getRunningTime(),
+                    movie == null ? null : movie.getAgeRating(),
+                    movie == null ? null : movie.getReleaseDate(),
+                    movie == null ? null : movie.getViewCount(),
+                    movie == null ? null : movie.getCategory(),
+                    movie == null ? null : movie.getPosterUrl(),
+
+                    theater == null ? null : theater.getId(),
+                    theater == null ? null : theater.getName(),
+
                     screening.getStartDate(),
                     screening.getStartAt(),
                     screening.getStatus(),
@@ -92,34 +158,56 @@ public final class ScreeningDto {
     /** 관리자 상영 목록 */
     public record AdminSummary(
             Long screeningId,
-            MovieDto.Summary movieSummary,
-            TheaterDto.Summary theaterSummary,
+
+            Long movieId,
+            String movieTitle,
+            String movieSummary,
+            Integer movieRunningTime,
+            MovieAgeRating movieAgeRating,
+            LocalDate movieReleaseDate,
+            Long movieViewCount,
+            MovieCategory movieCategory,
+            String moviePosterUrl,
+
+            Long theaterId,
+            String theaterName,
+
             LocalDate startDate,
             LocalTime startAt,
             ScreeningStatus status
     ) {
+        /** row 가 식별 정보만 담고 있어 나머지 영화 필드는 null 이다(기존 동작 유지). */
         public static AdminSummary from(ScreeningAdminRow row) {
             Assert.notNull(row, "row can not be null");
 
             return new AdminSummary(
                     row.getScreeningId(),
-                    MovieDto.Summary.of(row.getMovieId(), row.getMovieTitle()),
-                    TheaterDto.Summary.of(row.getTheaterId(), row.getTheaterName()),
+
+                    row.getMovieId(),
+                    row.getMovieTitle(),
+                    null, null, null, null, null, null, null,
+
+                    row.getTheaterId(),
+                    row.getTheaterName(),
+
                     row.getStartDate(),
                     row.getStartAt(),
                     row.getStatus()
             );
         }
 
-        // TODO: movieSummary/theaterSummary 를 채우지 않아 null 로 응답된다(기존 동작 유지).
+        // TODO: movie·theater 필드를 채우지 않아 null 로 응답된다(기존 동작 유지).
         //  findDetailById 가 movie·theater 를 JOIN FETCH 하므로 매핑만 추가하면 된다
         public static AdminSummary from(Screening screening) {
             Assert.notNull(screening, "screening can not be null");
 
             return new AdminSummary(
                     screening.getId(),
-                    null,
-                    null,
+
+                    null, null, null, null, null, null, null, null, null,
+
+                    null, null,
+
                     screening.getStartDate(),
                     screening.getStartAt(),
                     screening.getStatus()
@@ -130,21 +218,36 @@ public final class ScreeningDto {
     /** 관리자 상영 상세 */
     public record AdminDetail(
             Long screeningId,
-            MovieDto.Summary movieSummary,
-            TheaterDto.Summary theaterSummary,
+
+            Long movieId,
+            String movieTitle,
+            String movieSummary,
+            Integer movieRunningTime,
+            MovieAgeRating movieAgeRating,
+            LocalDate movieReleaseDate,
+            Long movieViewCount,
+            MovieCategory movieCategory,
+            String moviePosterUrl,
+
+            Long theaterId,
+            String theaterName,
+
             LocalDate startDate,
             LocalTime startAt,
             ScreeningStatus status
     ) {
-        // TODO: movieSummary/theaterSummary 를 채우지 않아 null 로 응답된다(기존 동작 유지).
+        // TODO: movie·theater 필드를 채우지 않아 null 로 응답된다(기존 동작 유지).
         //  findDetailById 가 movie·theater 를 JOIN FETCH 하므로 매핑만 추가하면 된다
         public static AdminDetail from(Screening screening) {
             Assert.notNull(screening, "screening can not be null");
 
             return new AdminDetail(
                     screening.getId(),
-                    null,
-                    null,
+
+                    null, null, null, null, null, null, null, null, null,
+
+                    null, null,
+
                     screening.getStartDate(),
                     screening.getStartAt(),
                     screening.getStatus()
@@ -152,7 +255,7 @@ public final class ScreeningDto {
         }
     }
 
-    /** 예매용 좌석 배치 응답 */
+    /** 예매용 좌석 배치 응답 — seatList 는 1:N 이라 평탄화 대상이 아니다 */
     public record SeatMap(
             Long screeningId,
             List<Seat> seatList
