@@ -46,10 +46,12 @@ public final class ScreeningDto {
         public static Summary of(Screening screening, @Nullable SeatCount seatCount) {
             Assert.notNull(screening, "screening can not be null");
 
+            // soft delete 된 영화·상영관(@SQLRestriction)은 조인에서 탈락해 null 일 수 있다.
+            // 지난 예매 내역은 조회되어야 하므로 해당 항목만 비워 응답한다.
             return new Summary(
                     screening.getId(),
-                    MovieDto.Summary.from(screening.getMovie()),
-                    TheaterDto.Summary.from(screening.getTheater()),
+                    screening.getMovie() == null ? null : MovieDto.Summary.from(screening.getMovie()),
+                    screening.getTheater() == null ? null : TheaterDto.Summary.from(screening.getTheater()),
                     screening.getStartDate(),
                     screening.getStartAt(),
                     screening.getStatus(),
@@ -73,10 +75,11 @@ public final class ScreeningDto {
         public static Detail of(Screening screening, @Nullable SeatCount seatCount) {
             Assert.notNull(screening, "screening can not be null");
 
+            // soft delete 된 영화·상영관은 조인에서 탈락해 null 일 수 있다(Summary 와 동일)
             return new Detail(
                     screening.getId(),
-                    MovieDto.Summary.from(screening.getMovie()),
-                    TheaterDto.Summary.from(screening.getTheater()),
+                    screening.getMovie() == null ? null : MovieDto.Summary.from(screening.getMovie()),
+                    screening.getTheater() == null ? null : TheaterDto.Summary.from(screening.getTheater()),
                     screening.getStartDate(),
                     screening.getStartAt(),
                     screening.getStatus(),

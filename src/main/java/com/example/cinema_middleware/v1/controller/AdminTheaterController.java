@@ -92,7 +92,7 @@ public class AdminTheaterController {
                 .body(Result.ofSuccess());
     }
 
-    @DeleteMapping("/seat/{seatId}")
+    @DeleteMapping("/{seatId}/seat")
     public ResponseEntity<Result<Void>> deleteSeat(@PathVariable Long seatId) {
         try {
             theaterService.removeSeat(seatId);

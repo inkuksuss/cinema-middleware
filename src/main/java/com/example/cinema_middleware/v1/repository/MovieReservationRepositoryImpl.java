@@ -19,6 +19,7 @@ import static com.example.cinema_middleware.v1.domain.entity.QMember.*;
 import static com.example.cinema_middleware.v1.domain.entity.QMovie.*;
 import static com.example.cinema_middleware.v1.domain.entity.QMovieReservation.*;
 import static com.example.cinema_middleware.v1.domain.entity.QScreening.*;
+import static com.example.cinema_middleware.v1.domain.entity.QTheater.*;
 import static com.example.cinema_middleware.v1.support.QueryDslUtils.createSlice;
 
 public class MovieReservationRepositoryImpl implements MovieReservationRepositoryQuery {
@@ -34,9 +35,9 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
         List<MovieReservation> content = queryFactory
                 .select(movieReservation)
                 .from(movieReservation)
-                .leftJoin(movieReservation.screening, screening)
-                .leftJoin(screening.movie, movie)
-                .fetchJoin()
+                .leftJoin(movieReservation.screening, screening).fetchJoin()
+                .leftJoin(screening.movie, movie).fetchJoin()
+                .leftJoin(screening.theater, theater).fetchJoin()
                 .where(
                         movieReservation.member.id.eq(memberId),
                         reservationStatusEq(status)
@@ -63,9 +64,9 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
         List<MovieReservation> content = queryFactory
                 .select(movieReservation)
                 .from(movieReservation)
-                .leftJoin(movieReservation.screening, screening)
-                .leftJoin(screening.movie, movie)
-                .fetchJoin()
+                .leftJoin(movieReservation.screening, screening).fetchJoin()
+                .leftJoin(screening.movie, movie).fetchJoin()
+                .leftJoin(screening.theater, theater).fetchJoin()
                 .where(
                         movieReservation.member.id.eq(memberId),
                         reservationStatusEq(status)

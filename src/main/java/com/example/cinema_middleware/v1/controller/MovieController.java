@@ -22,8 +22,8 @@ public class MovieController {
 
     private final MovieService movieService;
 
-    @GetMapping("/summary")
-    public ResponseEntity<Result<Page<MovieDto.Summary>>> getSummary(@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 7) Pageable pageable) {
+    @GetMapping("/")
+    public ResponseEntity<Result<Page<MovieDto.Summary>>> getMovieSummary(@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 7) Pageable pageable) {
         //TODO
         // front 페이지는 1번 시작이지만, 조회는 0번부터 시작
         Page<MovieDto.Summary> result = movieService.getMovieSummaryPage(pageable);
@@ -33,8 +33,8 @@ public class MovieController {
                 .body(Result.ofSuccess(result));
     }
 
-    @GetMapping("/detail/{id}")
-    public ResponseEntity<Result<MovieDto.Detail>> getDetail(@PathVariable Long movieId) {
+    @GetMapping("/{movieId}/detail")
+    public ResponseEntity<Result<MovieDto.Detail>> getMovieDetail(@PathVariable Long movieId) {
         MovieDto.Detail result = movieService.getMovieDetail(movieId);
 
         return ResponseEntity

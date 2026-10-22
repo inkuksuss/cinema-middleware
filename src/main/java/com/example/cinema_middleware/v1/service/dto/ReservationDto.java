@@ -2,6 +2,7 @@ package com.example.cinema_middleware.v1.service.dto;
 
 import com.example.cinema_middleware.v1.domain.entity.MoviePayment;
 import com.example.cinema_middleware.v1.domain.entity.MovieReservation;
+import com.example.cinema_middleware.v1.domain.entity.Screening;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
 import jakarta.annotation.Nullable;
 import org.springframework.util.Assert;
@@ -32,14 +33,19 @@ public final class ReservationDto {
         public static Summary from(MovieReservation movieReservation) {
             Assert.notNull(movieReservation, "movieReservation can not be null");
 
+            // 숨김 처리된 영화(@SQLRestriction)의 상영은 조인에서 탈락해 screening 이 null 일 수 있다.
+            // 지난 예매 내역은 영화가 내려가도 조회되어야 하므로 상영 정보만 비워 응답한다.
+            Screening screening = movieReservation.getScreening();
+
             return new Summary(
                     movieReservation.getId(),
                     movieReservation.getCode(),
                     movieReservation.getTotalPrice(),
                     movieReservation.getSeatCount(),
                     movieReservation.getStatus(),
-                    MovieDto.Summary.from(movieReservation.getScreening().getMovie()),
-                    ScreeningDto.Summary.from(movieReservation.getScreening())
+                    screening == null || screening.getMovie() == null
+                            ? null : MovieDto.Summary.from(screening.getMovie()),
+                    screening == null ? null : ScreeningDto.Summary.from(screening)
             );
         }
     }

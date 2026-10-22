@@ -41,9 +41,8 @@ public class ScreeningRepositoryImpl implements ScreeningRepositoryQuery {
         return queryFactory
                 .select(screening)
                 .from(screening)
-                .join(screening.movie, movie)
-                .join(screening.theater, theater)
-                .fetchJoin()
+                .join(screening.movie, movie).fetchJoin()
+                .join(screening.theater, theater).fetchJoin()
                 .where(
                         screening.startDate.eq(targetDate),
                         screening.status.eq(ScreeningStatus.ON_SALE),

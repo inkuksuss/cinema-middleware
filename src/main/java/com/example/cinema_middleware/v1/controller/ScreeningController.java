@@ -20,7 +20,7 @@ public class ScreeningController {
     private final ScreeningService screeningService;
 
     @GetMapping("/")
-    public ResponseEntity<Result<List<ScreeningDto.Summary>>> getSummary(
+    public ResponseEntity<Result<List<ScreeningDto.Summary>>> getScreeningSummary(
             @RequestParam(value = "movieId", required = false) Long movieId,
             @RequestParam("targetDate") @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate targetDate
     ) {
