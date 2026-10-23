@@ -2,6 +2,7 @@ package com.example.cinema_middleware.v1.domain.entity;
 
 import com.example.cinema_middleware.v1.domain.entity.base.TimeEntity;
 import com.example.cinema_middleware.v1.domain.entity.enums.MemberGrade;
+import com.example.cinema_middleware.v1.domain.entity.enums.MemberStatus;
 import com.example.cinema_middleware.v1.domain.entity.enums.SocialProvider;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -12,8 +13,8 @@ import org.hibernate.annotations.SQLRestriction;
 import org.springframework.util.Assert;
 
 @Entity
-@SQLRestriction("is_delete = false")
-@SQLDelete(sql = "UPDATE member SET is_delete = true WHERE member_id = ?")
+@SQLRestriction("status <> 'DELETE'")
+@SQLDelete(sql = "UPDATE member SET status = 'DELETE' WHERE member_id = ?")
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
 public class Member extends TimeEntity {
@@ -38,15 +39,16 @@ public class Member extends TimeEntity {
     private String birthday;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 30)
     private MemberGrade grade;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 30)
     private SocialProvider socialProvider;
 
-    @Column(nullable = false)
-    private boolean isDelete = false;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private MemberStatus status;
 
     public static Member create(
             String email,
@@ -73,6 +75,7 @@ public class Member extends TimeEntity {
         member.birthday = birthday;
         member.grade = grade;
         member.socialProvider = socialProvider;
+        member.status = MemberStatus.ACTIVE;
 
         return member;
     }

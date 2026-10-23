@@ -19,7 +19,7 @@ public class LogMaster {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 30)
     private TransactionType type;
 
     @Lob

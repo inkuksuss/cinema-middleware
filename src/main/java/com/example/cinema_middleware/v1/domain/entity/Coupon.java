@@ -1,6 +1,9 @@
 package com.example.cinema_middleware.v1.domain.entity;
 
 import com.example.cinema_middleware.v1.domain.entity.base.DefaultEntity;
+import com.example.cinema_middleware.v1.domain.entity.enums.CouponStatus;
+import com.example.cinema_middleware.v1.domain.entity.enums.CouponUsage;
+import com.example.cinema_middleware.v1.domain.entity.enums.DiscountType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -24,6 +27,14 @@ public class Coupon extends DefaultEntity {
     @Column(nullable = false, length = 100)
     private String name;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private CouponUsage usage;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private DiscountType discountType;
+
     @Column(nullable = false)
     private Integer totalQuantity;
 
@@ -38,6 +49,7 @@ public class Coupon extends DefaultEntity {
     @Column(nullable = false)
     private LocalDateTime endAt;
 
-    @Column(nullable = false)
-    private boolean isDelete = false;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private CouponStatus status;
 }

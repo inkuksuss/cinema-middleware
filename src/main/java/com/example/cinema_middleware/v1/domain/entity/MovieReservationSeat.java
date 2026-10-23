@@ -11,8 +11,6 @@ import org.springframework.util.Assert;
 
 
 @Entity
-
-// 낙관적 락으로도 해결할 수 있지만 그 경우 남은 좌석을 계산하려면 movie_reservation 테이블을 조인에 포함시켜야한다.
 @Table(
         uniqueConstraints = @UniqueConstraint(
         name = "uk_seat_hold",
@@ -40,7 +38,7 @@ public class MovieReservationSeat extends DefaultEntity {
     private TheaterSeat theaterSeat;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 100)
+    @Column(length = 30)
     private ReservationSeatStatus status;
 
     public static MovieReservationSeat create(MovieReservation reservation, Screening screening, TheaterSeat theaterSeat) {

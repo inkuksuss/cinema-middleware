@@ -1,6 +1,8 @@
 package com.example.cinema_middleware.v1.controller.request;
 
 import com.example.cinema_middleware.v1.domain.entity.enums.SeatGrade;
+import com.example.cinema_middleware.v1.domain.entity.enums.SeatStatus;
+import com.example.cinema_middleware.v1.service.dto.SeatCommand;
 import com.example.cinema_middleware.v1.service.dto.TheaterCommand;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -8,6 +10,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -51,7 +54,12 @@ public final class TheaterRequest {
                 String seatColumn,
 
                 @NotNull(message = "grade은(는) 필수 입력 항목입니다.")
-                SeatGrade grade
+                SeatGrade grade,
+
+                BigDecimal price,
+
+                @NotNull(message = "status은(는) 필수 입력 항목입니다.")
+                SeatStatus status
         ) {
         }
 
@@ -60,8 +68,8 @@ public final class TheaterRequest {
             return new TheaterCommand.BulkAddSeat(
                     theaterId,
                     seatList.stream()
-                            .map(seat -> new TheaterCommand.BulkAddSeat.Seat(
-                                    seat.seatRow(), seat.seatColumn(), seat.grade()))
+                            .map(seat -> new SeatCommand.Create(
+                                    seat.seatRow(), seat.seatColumn(), seat.grade(), seat.price, seat.status))
                             .toList()
             );
         }

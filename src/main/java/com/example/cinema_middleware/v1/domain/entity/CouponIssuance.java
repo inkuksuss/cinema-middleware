@@ -29,12 +29,12 @@ public class CouponIssuance extends DefaultEntity {
     @JoinColumn(name = "coupon_id")
     private Coupon coupon;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 100)
-    private IssuanceStatus status = IssuanceStatus.ISSUED;
-
     @Column(nullable = false)
     private LocalDateTime expiredAt;
 
     private LocalDateTime usedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private IssuanceStatus status = IssuanceStatus.ISSUED;
 }

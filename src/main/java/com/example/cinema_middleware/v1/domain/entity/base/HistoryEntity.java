@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class HistoryEntity {
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 30)
     private HistoryType changeType;
 
     private String changeReason;

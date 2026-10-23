@@ -25,23 +25,24 @@
 --       (a) is_delete BIT(1) DEFAULT b'0' 컬럼
 --           -> @SQLRestriction("is_delete = false")
 --              + @SQLDelete(... SET is_delete = true ...)
---           대상: member, theater, theater_seat, coupon,
---                 file_master, common_code_group, common_code_detail
+--           대상: coupon, file_master, common_code_group, common_code_detail
 --       (b) status 컬럼의 특정 enum 값으로 대체 (is_delete 컬럼 없음)
---           -> movie: status='HIDDEN' / screening: status='DELETE', coupon_issuance
+--           -> member: status='DELETE' / movie: status='HIDDEN' / screening: status='DELETE'
+--              cinema, theater, theater_seat: status='DELETE'
 --       (c) soft delete 없음 (물리 삭제)
 --           -> movie_reservation, movie_reservation_seat, movie_payment,
---              movie_reservation_history, log_master
+--              movie_reservation_history, movie_payment_history, coupon_issuance, log_master
 --   - PK 컬럼명은 `{테이블}_id`, 대부분 BIGINT AUTO_INCREMENT.
 --   - 연관관계는 전부 @ManyToOne(LAZY) -> 물리적으로 FK 컬럼 + 인덱스.
 --     예외: file_master 는 target_id+target_type(enum) 으로 여러 테이블을 가리키는
 --     polymorphic 참조라 물리적 FK 가 없다(조회용 인덱스만).
---     예외: movie_reservation_history 는 스냅샷 테이블이라 연관관계 없이
+--     예외: movie_reservation_history / movie_payment_history 는 스냅샷 테이블이라 연관관계 없이
 --     참조 ID 를 값으로만 보관한다(물리적 FK 없음, 조회용 인덱스만).
---   - Enum 은 @Enumerated(STRING) -> VARCHAR(100) 로 저장.
+--   - Enum 은 @Enumerated(STRING) -> VARCHAR(30) 로 저장.
 --     (CommonCode 계열은 문자열 코드를 그대로 PK 로 쓴다)
---   - 예매 : 결제 = 1:N (부분결제·재결제·환불을 결제 행으로 쌓는다).
---     FK 는 movie_payment.movie_reservation_id 한쪽에만 둔다(유니크 제약 없음).
+--   - 예매 : 결제 시도 = 1:N, 예매 : 확정 결제 = 1:1.
+--     movie_payment.movie_reservation_id 는 시도가 속한 예매(N:1),
+--     movie_reservation.movie_payment_id 는 예매를 확정한 결제 하나(UNIQUE)를 가리킨다.
 --
 -- 실행 순서: 참조 무결성 때문에 아래 정의 순서대로 생성해야 한다.
 -- =============================================================================
@@ -52,7 +53,9 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- -----------------------------------------------------------------------------
 -- member : 회원
 --   base: TimeEntity (created_by/updated_by 없음)
---   soft delete: is_delete BIT
+--   soft delete: status='DELETE' (is_delete 컬럼 없음)
+--     @SQLRestriction("status <> 'DELETE'")
+--     @SQLDelete(... SET status = 'DELETE' ...)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS member
 (
@@ -62,11 +65,11 @@ CREATE TABLE IF NOT EXISTS member
     password        VARCHAR(255) NOT NULL COMMENT 'BCrypt 해시 비밀번호',
     phone_number    VARCHAR(100) NOT NULL COMMENT '휴대전화 번호',
     birthday        VARCHAR(100) NOT NULL COMMENT '생년월일(문자열 저장)',
-    grade           VARCHAR(100) NOT NULL COMMENT '회원 등급(MemberGrade: ROLE_COMMON/ROLE_VIP/ROLE_MANAGE_ADMIN/ROLE_SUPER_ADMIN)',
-    social_provider VARCHAR(100) NOT NULL COMMENT '소셜 로그인 제공자(SocialProvider: KAKAO/GOOGLE/NORMAL)',
+    grade           VARCHAR(30)  NOT NULL COMMENT '회원 등급(MemberGrade: ROLE_COMMON/ROLE_VIP/ROLE_MANAGE_ADMIN/ROLE_SUPER_ADMIN)',
+    social_provider VARCHAR(30)  NOT NULL COMMENT '소셜 로그인 제공자(SocialProvider: KAKAO/GOOGLE/NORMAL)',
+    status          VARCHAR(30)  NOT NULL COMMENT '회원 상태(MemberStatus: ACTIVE/SLEEP/LOCKED/DELETE). DELETE 가 soft delete',
     created_at      DATETIME(6)  NULL COMMENT '생성 일시',
     updated_at      DATETIME(6)  NULL COMMENT '수정 일시',
-    is_delete       BIT(1)       NOT NULL DEFAULT b'0' COMMENT '삭제 여부',
     PRIMARY KEY (member_id),
     KEY idx_member_email (email)
 ) ENGINE = InnoDB
@@ -88,12 +91,12 @@ CREATE TABLE IF NOT EXISTS movie
     summary      VARCHAR(255) NOT NULL COMMENT '한줄 요약',
     description  LONGTEXT     NULL COMMENT '상세 설명(@Lob)',
     running_time INT          NOT NULL COMMENT '상영 시간(분)',
-    age_rating   VARCHAR(100) NOT NULL COMMENT '관람 등급(MovieAgeRating: ALL/UPPER_12/UPPER_15/ONLY_ADULT)',
+    age_rating   VARCHAR(30)  NOT NULL COMMENT '관람 등급(MovieAgeRating: ALL/UPPER_12/UPPER_15/ONLY_ADULT)',
     release_date DATE         NOT NULL COMMENT '개봉일',
     close_date   DATE         NOT NULL COMMENT '상영 종료일',
     view_count   BIGINT       NOT NULL DEFAULT 0 COMMENT '조회수',
-    status       VARCHAR(100) NOT NULL COMMENT '영화 상태(MovieStatus: DISPLAY/HIDDEN). HIDDEN 이 soft delete',
-    category     VARCHAR(100) NOT NULL COMMENT '장르(MovieCategory: ROMANCE/THRILLER/SF)',
+    status       VARCHAR(30)  NOT NULL COMMENT '영화 상태(MovieStatus: DISPLAY/HIDDEN). HIDDEN 이 soft delete',
+    category     VARCHAR(30)  NOT NULL COMMENT '장르(MovieCategory: ROMANCE/THRILLER/SF)',
     poster_url   VARCHAR(255) NULL COMMENT '포스터 이미지 URL',
     created_at   DATETIME(6)  NULL COMMENT '생성 일시',
     updated_at   DATETIME(6)  NULL COMMENT '수정 일시',
@@ -106,20 +109,45 @@ CREATE TABLE IF NOT EXISTS movie
 
 
 -- -----------------------------------------------------------------------------
+-- cinema : 영화관(지점)
+--   base: DefaultEntity
+--   soft delete: status='DELETE' (is_delete 컬럼 없음)
+--     @SQLRestriction("status != 'DELETE'")
+--     @SQLDelete(... SET status = 'DELETE' ...)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS cinema
+(
+    cinema_id   BIGINT       NOT NULL AUTO_INCREMENT COMMENT '영화관 PK',
+    name        VARCHAR(100) NOT NULL COMMENT '영화관 이름',
+    description LONGTEXT     NULL COMMENT '영화관 설명(@Lob)',
+    status      VARCHAR(30)  NOT NULL COMMENT '영화관 상태(CinemaStatus: OPEN/CLOSE/DELETE). DELETE 가 soft delete',
+    created_at  DATETIME(6)  NULL COMMENT '생성 일시',
+    updated_at  DATETIME(6)  NULL COMMENT '수정 일시',
+    created_by  BIGINT       NULL COMMENT '생성자',
+    updated_by  BIGINT       NULL COMMENT '수정자',
+    PRIMARY KEY (cinema_id)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci COMMENT = '영화관';
+
+
+-- -----------------------------------------------------------------------------
 -- theater : 상영관
 --   base: DefaultEntity
---   soft delete: is_delete BIT
+--   soft delete: status='DELETE' (is_delete 컬럼 없음)
+--     @SQLRestriction("status != 'DELETE'")
+--     @SQLDelete(... SET status = 'DELETE' ...)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS theater
 (
     theater_id  BIGINT       NOT NULL AUTO_INCREMENT COMMENT '상영관 PK',
     name        VARCHAR(100) NOT NULL COMMENT '상영관 이름',
     description VARCHAR(255) NULL COMMENT '상영관 설명',
+    status      VARCHAR(30)  NOT NULL COMMENT '상영관 상태(TheaterStatus: AVAILABLE/UNAVAILABLE/DELETE). DELETE 가 soft delete',
     created_at  DATETIME(6)  NULL COMMENT '생성 일시',
     updated_at  DATETIME(6)  NULL COMMENT '수정 일시',
     created_by  BIGINT       NULL COMMENT '생성자',
     updated_by  BIGINT       NULL COMMENT '수정자',
-    is_delete   BIT(1)       NOT NULL DEFAULT b'0' COMMENT '삭제 여부',
     PRIMARY KEY (theater_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
@@ -129,9 +157,11 @@ CREATE TABLE IF NOT EXISTS theater
 -- -----------------------------------------------------------------------------
 -- theater_seat : 상영관 좌석
 --   base: DefaultEntity
---   soft delete: is_delete BIT
+--   soft delete: status='DELETE' (is_delete 컬럼 없음)
+--     @SQLRestriction("status != 'DELETE'")
+--     @SQLDelete(... SET status = 'DELETE' ...)
 --   FK: theater_id -> theater
---   price: 좌석 등급별 가격 (NORMAL 8000 / ADVANCED 10000)
+--   좌석 가격은 컬럼이 아니라 SeatGrade enum 의 price 값이다 (price 컬럼 없음).
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS theater_seat
 (
@@ -139,13 +169,12 @@ CREATE TABLE IF NOT EXISTS theater_seat
     theater_id      BIGINT         NULL COMMENT '상영관 FK',
     seat_row        VARCHAR(100)   NOT NULL COMMENT '좌석 행(예: A, B)',
     seat_column     VARCHAR(100)   NOT NULL COMMENT '좌석 열(예: 1, 2)',
-    grade           VARCHAR(100)   NOT NULL COMMENT '좌석 등급(SeatGrade: NORMAL/ADVANCED)',
-    price           DECIMAL(10, 2) NOT NULL COMMENT '좌석 가격(등급별)',
+    grade           VARCHAR(30)    NOT NULL COMMENT '좌석 등급(SeatGrade: NORMAL/ADVANCED)',
+    status          VARCHAR(30)    NOT NULL COMMENT '좌석 상태(SeatStatus: AVAILABLE/UNAVAILABLE/DELETE). DELETE 가 soft delete',
     created_at      DATETIME(6)    NULL COMMENT '생성 일시',
     updated_at      DATETIME(6)    NULL COMMENT '수정 일시',
     created_by      BIGINT         NULL COMMENT '생성자',
     updated_by      BIGINT         NULL COMMENT '수정자',
-    is_delete       BIT(1)         NOT NULL DEFAULT b'0' COMMENT '삭제 여부',
     PRIMARY KEY (theater_seat_id),
     KEY idx_theater_seat_theater (theater_id),
     CONSTRAINT fk_theater_seat_theater FOREIGN KEY (theater_id) REFERENCES theater (theater_id)
@@ -167,9 +196,10 @@ CREATE TABLE IF NOT EXISTS screening
     screening_id BIGINT       NOT NULL AUTO_INCREMENT COMMENT '상영 회차 PK',
     movie_id     BIGINT       NULL COMMENT '영화 FK',
     theater_id   BIGINT       NULL COMMENT '상영관 FK',
+    screen_type  VARCHAR(30)  NOT NULL COMMENT '상영 타입(ScreenType: V_2D/V_4D/V_SCREENX). 응답 시 displayName 으로 변환',
     start_date   DATE         NOT NULL COMMENT '상영일',
     start_at     TIME(6)      NOT NULL COMMENT '상영 시작 시각',
-    status       VARCHAR(100) NOT NULL COMMENT '상영 상태(ScreeningStatus: PRE_SALE/ON_SALE/END_SALE/SOLD_OUT/DELETE). DELETE 가 soft delete',
+    status       VARCHAR(30)  NOT NULL COMMENT '상영 상태(ScreeningStatus: PRE_SALE/ON_SALE/END_SALE/SOLD_OUT/DELETE). DELETE 가 soft delete',
     created_at   DATETIME(6)  NULL COMMENT '생성 일시',
     updated_at   DATETIME(6)  NULL COMMENT '수정 일시',
     created_by   BIGINT       NULL COMMENT '생성자',
@@ -190,8 +220,12 @@ CREATE TABLE IF NOT EXISTS screening
 --   soft delete 없음 (물리 삭제)
 --   FK: member_id -> member, screening_id -> screening,
 --       coupon_issuance_id -> coupon_issuance (nullable, 예매당 최대 1개 쿠폰)
---   결제는 1:N — 이 테이블에 movie_payment_id 컬럼은 없고,
---   movie_payment.movie_reservation_id 가 FK 를 가진다.
+--   FK: movie_payment_id -> movie_payment (nullable, UNIQUE)
+--     예매를 확정한(COMPLETE) 결제 하나만 가리킨다. 결제 전·실패 상태에서는 NULL
+--     (MySQL 은 NULL 을 유니크 제약에서 서로 다른 값으로 취급하므로 미결제 예매가 여럿이어도 된다).
+--     결제 시도(N건)는 movie_payment.movie_reservation_id 로 역참조한다 — 순환 FK.
+--     생성 순서: 예매 INSERT -> 결제 INSERT -> 예매 UPDATE(movie_payment_id).
+--   version: 낙관적 락(@Version). 서로 다른 결제 시도가 동시에 승인돼도 한 건만 확정된다.
 --   주의: coupon_issuance 는 이 테이블보다 뒤에 정의되지만 파일 상단
 --         SET FOREIGN_KEY_CHECKS = 0 덕에 순서와 무관하게 생성된다.
 -- -----------------------------------------------------------------------------
@@ -201,23 +235,26 @@ CREATE TABLE IF NOT EXISTS movie_reservation
     member_id            BIGINT         NULL COMMENT '예매 회원 FK',
     screening_id         BIGINT         NULL COMMENT '상영 회차 FK',
     coupon_issuance_id   BIGINT         NULL COMMENT '사용 쿠폰 발급 FK (nullable)',
+    movie_payment_id     BIGINT         NULL COMMENT '확정 결제 FK (nullable, UNIQUE)',
     code                 VARCHAR(255)   NOT NULL COMMENT '예매 번호(고유 코드)',
     seat_names           VARCHAR(255)   NOT NULL COMMENT '예매 좌석명 목록(seat_row+seat_column, 쉼표 구분. 예: A1, B2, C3)',
     total_price          DECIMAL(10, 2) NOT NULL COMMENT '총 결제 금액',
-    status               VARCHAR(100)   NOT NULL COMMENT '예매 상태(ReservationStatus: EXPIRED/CANCELED/SUCCESS/PENDING)',
-    expired_at           DATETIME(6)    NULL COMMENT '예매 만료 일시(PENDING 홀드 만료)',
-    canceled_at          DATETIME(6)    NULL COMMENT '예매 취소 일시',
+    status               VARCHAR(30)    NOT NULL COMMENT '예매 상태(ReservationStatus: EXPIRED/SUCCESS/PENDING/CANCELED)',
+    expired_at           DATETIME(6)    NOT NULL COMMENT '예매 홀드 만료 일시(생성 시 +10분, 이후 변경 불가)',
+    version              BIGINT         NOT NULL DEFAULT 0 COMMENT '낙관적 락 버전',
     created_at           DATETIME(6)    NULL COMMENT '생성 일시',
     updated_at           DATETIME(6)    NULL COMMENT '수정 일시',
     created_by           BIGINT         NULL COMMENT '생성자',
     updated_by           BIGINT         NULL COMMENT '수정자',
     PRIMARY KEY (movie_reservation_id),
+    UNIQUE KEY uk_movie_reservation_payment (movie_payment_id),
     KEY idx_movie_reservation_member (member_id),
     KEY idx_movie_reservation_screening (screening_id),
     KEY idx_movie_reservation_coupon_issuance (coupon_issuance_id),
     CONSTRAINT fk_movie_reservation_member FOREIGN KEY (member_id) REFERENCES member (member_id),
     CONSTRAINT fk_movie_reservation_screening FOREIGN KEY (screening_id) REFERENCES screening (screening_id),
-    CONSTRAINT fk_movie_reservation_coupon_issuance FOREIGN KEY (coupon_issuance_id) REFERENCES coupon_issuance (coupon_issuance_id)
+    CONSTRAINT fk_movie_reservation_coupon_issuance FOREIGN KEY (coupon_issuance_id) REFERENCES coupon_issuance (coupon_issuance_id),
+    CONSTRAINT fk_movie_reservation_payment FOREIGN KEY (movie_payment_id) REFERENCES movie_payment (movie_payment_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci COMMENT = '영화 예매';
@@ -245,7 +282,7 @@ CREATE TABLE IF NOT EXISTS movie_reservation_seat
     movie_reservation_id      BIGINT       NULL COMMENT '예매 FK',
     screening_id              BIGINT       NULL COMMENT '상영 회차 FK',
     theater_seat_id           BIGINT       NULL COMMENT '상영관 좌석 FK',
-    status                    VARCHAR(100) NULL COMMENT '좌석 점유 상태(ReservationSeatStatus: RESERVED, NULL=취소/만료). 유니크 제약 회피용',
+    status                    VARCHAR(30)  NULL COMMENT '좌석 점유 상태(ReservationSeatStatus: RESERVED, NULL=취소/만료). 유니크 제약 회피용',
     created_at                DATETIME(6)  NULL COMMENT '생성 일시',
     updated_at                DATETIME(6)  NULL COMMENT '수정 일시',
     created_by                BIGINT       NULL COMMENT '생성자',
@@ -264,29 +301,35 @@ CREATE TABLE IF NOT EXISTS movie_reservation_seat
 
 
 -- -----------------------------------------------------------------------------
--- movie_payment : 결제 (TODO - 엔티티 골격만 존재)
+-- movie_payment : 결제 시도
 --   base: DefaultEntity
 --   soft delete 없음 (물리 삭제)
---   FK: movie_reservation_id -> movie_reservation (ManyToOne)
---   예매 1 : 결제 N — 부분결제·재결제·환불이 행으로 쌓이므로 유니크 제약을 두지 않는다.
+--   FK: movie_reservation_id -> movie_reservation (ManyToOne, NOT NULL)
+--   시도 1회 = 행 1개. 재시도는 새 멱등키로 새 행을 만든다(부분 결제는 지원하지 않음).
+--   UNIQUE: idempotency_key — 같은 시도의 중복 요청(따닥·재전송)을 막는다(PG orderId).
+--   예매를 확정한 결제는 movie_reservation.movie_payment_id 가 가리킨다.
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS movie_payment
 (
     movie_payment_id     BIGINT         NOT NULL AUTO_INCREMENT COMMENT '결제 PK',
-    movie_reservation_id BIGINT         NULL COMMENT '예매 FK (ManyToOne)',
+    movie_reservation_id BIGINT         NOT NULL COMMENT '예매 FK (ManyToOne)',
+    idempotency_key      VARCHAR(64)    NOT NULL COMMENT '결제 시도 멱등키(PG orderId)',
     paid_amount          DECIMAL(10, 2) NOT NULL COMMENT '결제 금액',
-    status               VARCHAR(100)   NOT NULL COMMENT '결제 상태(PaymentStatus: EXPIRED/CANCELED/SUCCESS/PENDING)',
-    method               VARCHAR(100)   NOT NULL COMMENT '결제 수단',
+    status               VARCHAR(30)    NOT NULL COMMENT '결제 상태(PaymentStatus: PENDING/COMPLETE/FAILED/CANCELED)',
+    method               VARCHAR(30)    NOT NULL COMMENT '결제 수단(PaymentMethod: CARD/KAKAO/TOSS)',
+    paid_at             DATETIME(6)    NULL COMMENT '결제 완료 일시',
+    canceled_at          DATETIME(6)    NULL COMMENT '결제 취소 일시',
     created_at           DATETIME(6)    NULL COMMENT '생성 일시',
     updated_at           DATETIME(6)    NULL COMMENT '수정 일시',
     created_by           BIGINT         NULL COMMENT '생성자',
     updated_by           BIGINT         NULL COMMENT '수정자',
     PRIMARY KEY (movie_payment_id),
+    UNIQUE KEY uk_movie_payment_idempotency_key (idempotency_key),
     KEY idx_movie_payment_reservation (movie_reservation_id),
     CONSTRAINT fk_movie_payment_reservation FOREIGN KEY (movie_reservation_id) REFERENCES movie_reservation (movie_reservation_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_0900_ai_ci COMMENT = '결제(TODO)';
+  COLLATE = utf8mb4_0900_ai_ci COMMENT = '결제 시도';
 
 
 -- -----------------------------------------------------------------------------
@@ -311,8 +354,8 @@ CREATE TABLE IF NOT EXISTS movie_reservation_history
     total_price                  DECIMAL(10, 2) NOT NULL COMMENT '총 결제 금액(스냅샷)',
     expired_at                   DATETIME(6)    NULL COMMENT '예매 만료 일시(스냅샷)',
     canceled_at                  DATETIME(6)    NULL COMMENT '예매 취소 일시(스냅샷)',
-    status                       VARCHAR(100)   NOT NULL COMMENT '예매 상태(ReservationStatus)',
-    change_type                  VARCHAR(100)   NOT NULL COMMENT '변경 종류(HistoryType: UPDATE)',
+    status                       VARCHAR(30)    NOT NULL COMMENT '예매 상태(ReservationStatus)',
+    change_type                  VARCHAR(30)    NOT NULL COMMENT '변경 종류(HistoryType: UPDATE)',
     change_reason                VARCHAR(255)   NULL COMMENT '변경 사유',
     history_created_at           DATETIME(6)    NULL COMMENT '이력 생성 일시',
     history_created_by           BIGINT         NULL COMMENT '이력 생성자',
@@ -327,6 +370,35 @@ CREATE TABLE IF NOT EXISTS movie_reservation_history
 
 
 -- -----------------------------------------------------------------------------
+-- movie_payment_history : 결제 시도 변경 이력
+--   base: HistoryEntity (change_type/change_reason/history_created_at/history_created_by)
+--   soft delete 없음, updated_* 없음 (append-only)
+--   결제 상태가 바뀌는 시점의 스냅샷을 남긴다(실패·취소된 시도 추적용).
+--   movie_reservation_history 와 같은 규칙: 참조 ID 를 값으로만 보관하고
+--   물리적 FK 는 두지 않는다(조회용 인덱스만).
+--   idempotency_key 는 시도 하나에 이력이 여러 행 쌓이므로 UNIQUE 가 아닌 일반 인덱스다.
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS movie_payment_history
+(
+    movie_payment_history_id BIGINT         NOT NULL AUTO_INCREMENT COMMENT '결제 이력 PK',
+    movie_reservation_id     BIGINT         NULL COMMENT '예매 ID(스냅샷, FK 없음)',
+    idempotency_key          VARCHAR(64)    NOT NULL COMMENT '결제 시도 멱등키(스냅샷)',
+    paid_amount              DECIMAL(10, 2) NOT NULL COMMENT '결제 금액(스냅샷)',
+    method                   VARCHAR(100)   NOT NULL COMMENT '결제 수단(스냅샷)',
+    status                   VARCHAR(30)    NOT NULL COMMENT '결제 상태(PaymentStatus)',
+    change_type              VARCHAR(30)    NOT NULL COMMENT '변경 종류(HistoryType)',
+    change_reason            VARCHAR(255)   NULL COMMENT '변경 사유',
+    history_created_at       DATETIME(6)    NULL COMMENT '이력 생성 일시',
+    history_created_by       BIGINT         NULL COMMENT '이력 생성자',
+    PRIMARY KEY (movie_payment_history_id),
+    KEY idx_mph_reservation (movie_reservation_id),
+    KEY idx_mph_idempotency_key (idempotency_key)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci COMMENT = '결제 시도 변경 이력';
+
+
+-- -----------------------------------------------------------------------------
 -- coupon : 쿠폰(발급 대상 정의)
 --   base: DefaultEntity
 --   soft delete: is_delete BIT
@@ -335,11 +407,14 @@ CREATE TABLE IF NOT EXISTS coupon
 (
     coupon_id       BIGINT       NOT NULL AUTO_INCREMENT COMMENT '쿠폰 PK',
     name            VARCHAR(100) NOT NULL COMMENT '쿠폰 이름',
+    usage_type      VARCHAR(30)  NOT NULL COMMENT '쿠폰 사용처(CouponUsage: MOVIE/PRODUCT). usage 는 MySQL 예약어라 usage_type',
+    discount_type   VARCHAR(30)  NOT NULL COMMENT '할인 종류(DiscountType: PERCENT_10/PERCENT_50/MINUS_5000/MINUS_3000)',
     total_quantity  INT          NOT NULL COMMENT '총 발급 가능 수량',
     issued_quantity INT          NOT NULL COMMENT '현재까지 발급된 수량',
     validity_day    INT          NULL COMMENT '발급일 기준 유효 기간(일)',
     start_at        DATETIME(6)  NOT NULL COMMENT '쿠폰 발급 시작 일시',
     end_at          DATETIME(6)  NOT NULL COMMENT '쿠폰 발급 종료 일시',
+    status          VARCHAR(30)  NOT NULL COMMENT '쿠폰 상태(CouponStatus: PRE_ISSUE/CAN_ISSUE/SOLD_OUT/DELETE)',
     created_at      DATETIME(6)  NULL COMMENT '생성 일시',
     updated_at      DATETIME(6)  NULL COMMENT '수정 일시',
     created_by      BIGINT       NULL COMMENT '생성자',
@@ -354,25 +429,21 @@ CREATE TABLE IF NOT EXISTS coupon
 -- -----------------------------------------------------------------------------
 -- coupon_issuance : 쿠폰 발급 내역(회원별)
 --   base: DefaultEntity
+--   soft delete 없음 (물리 삭제, is_delete 컬럼 없음)
 --   FK: member_id -> member, coupon_id -> coupon
---   🔴 is_delete: 엔티티에 isDelete 필드가 없지만
---      @SQLRestriction("is_delete = false") / @SQLDelete 가 raw SQL 로 이 컬럼을
---      참조하므로 반드시 존재해야 한다 (없으면 조회 시 SQL 에러).
---      Hibernate validate 는 raw SQL 을 검사하지 않아 부팅은 통과한다.
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS coupon_issuance
 (
     coupon_issuance_id BIGINT       NOT NULL AUTO_INCREMENT COMMENT '쿠폰 발급 PK',
     member_id          BIGINT       NULL COMMENT '발급 대상 회원 FK',
     coupon_id          BIGINT       NULL COMMENT '쿠폰 FK',
-    status             VARCHAR(100) NOT NULL COMMENT '발급 상태(IssuanceStatus: USED/ISSUED/EXPIRED)',
+    status             VARCHAR(30)  NOT NULL COMMENT '발급 상태(IssuanceStatus: USED/ISSUED/EXPIRED)',
     expired_at         DATETIME(6)  NOT NULL COMMENT '쿠폰 만료 일시',
     used_at            DATETIME(6)  NULL COMMENT '쿠폰 사용 일시',
     created_at         DATETIME(6)  NULL COMMENT '생성 일시',
     updated_at         DATETIME(6)  NULL COMMENT '수정 일시',
     created_by         BIGINT       NULL COMMENT '생성자',
     updated_by         BIGINT       NULL COMMENT '수정자',
-    is_delete          BIT(1)       NOT NULL DEFAULT b'0' COMMENT '삭제 여부(엔티티 필드 없음, @SQLRestriction 전용)',
     PRIMARY KEY (coupon_issuance_id),
     KEY idx_coupon_issuance_member (member_id),
     KEY idx_coupon_issuance_coupon (coupon_id),
@@ -394,8 +465,8 @@ CREATE TABLE IF NOT EXISTS file_master
 (
     file_id       BIGINT       NOT NULL AUTO_INCREMENT COMMENT '파일 PK',
     target_id     BIGINT       NOT NULL COMMENT '참조 대상 PK(target_type 에 따라 가리키는 테이블이 달라짐)',
-    target_type   VARCHAR(100) NOT NULL COMMENT '참조 대상 테이블(TableType: MOVIE/ITEM)',
-    usage_type    VARCHAR(100) NOT NULL COMMENT '파일 용도(UsageType: THUMBNAIL/IMAGE)',
+    target_type   VARCHAR(30)  NOT NULL COMMENT '참조 대상 테이블(TableType: MOVIE/ITEM)',
+    usage_type    VARCHAR(30)  NOT NULL COMMENT '파일 용도(FileUsage: THUMBNAIL/IMAGE). usage 는 MySQL 예약어라 usage_type',
     original_name VARCHAR(255) NULL COMMENT '원본 파일명',
     destination   VARCHAR(255) NULL COMMENT '저장 경로/URL',
     size          BIGINT       NULL COMMENT '파일 크기(byte)',
@@ -423,7 +494,7 @@ CREATE TABLE IF NOT EXISTS file_master
 CREATE TABLE IF NOT EXISTS log_master
 (
     log_id     BIGINT       NOT NULL AUTO_INCREMENT COMMENT '로그 PK',
-    type       VARCHAR(100) NOT NULL COMMENT '트랜잭션 종류(TransactionType: INSERT/UPDATE/DELETE)',
+    type       VARCHAR(30)  NOT NULL COMMENT '트랜잭션 종류(TransactionType: INSERT/UPDATE/DELETE)',
     body       LONGTEXT     NULL COMMENT '로그 본문(@Lob)',
     created_at DATETIME(6)  NOT NULL COMMENT '생성 일시',
     created_by BIGINT       NOT NULL COMMENT '생성자 회원 PK',
@@ -466,8 +537,9 @@ CREATE TABLE IF NOT EXISTS common_code_detail
 (
     common_code_group_id    VARCHAR(100) NOT NULL COMMENT '공통 코드 그룹 FK / 복합 PK',
     common_code_detail_code VARCHAR(100) NOT NULL COMMENT '공통 코드 상세 코드 / 복합 PK',
+    display_name            VARCHAR(100) NOT NULL COMMENT '화면 표시명',
     description             VARCHAR(255) NULL COMMENT '코드 설명',
-    sort_order              INT          NOT NULL COMMENT '정렬 순서',
+    sort_order             INT          NOT NULL COMMENT '정렬 순서',
     attr                    VARCHAR(255) NULL COMMENT '부가 속성(자유 값)',
     created_at              DATETIME(6)  NULL COMMENT '생성 일시',
     updated_at              DATETIME(6)  NULL COMMENT '수정 일시',

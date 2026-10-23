@@ -34,11 +34,11 @@ public class Movie extends DefaultEntity {
     @Lob
     private String description;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false)
     private Integer runningTime;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 30)
     private MovieAgeRating ageRating;
 
     @Column(nullable = false)
@@ -53,11 +53,11 @@ public class Movie extends DefaultEntity {
     private Long viewCount = 0L;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 30)
     private MovieStatus status;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 30)
     private MovieCategory category;
 
     public static Movie create(

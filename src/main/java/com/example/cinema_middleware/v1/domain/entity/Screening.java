@@ -1,6 +1,7 @@
 package com.example.cinema_middleware.v1.domain.entity;
 
 import com.example.cinema_middleware.v1.domain.entity.base.DefaultEntity;
+import com.example.cinema_middleware.v1.domain.entity.enums.ScreenType;
 import com.example.cinema_middleware.v1.domain.entity.enums.ScreeningStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -32,6 +33,10 @@ public class Screening extends DefaultEntity {
     @JoinColumn(name = "theater_id")
     private Theater theater;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private ScreenType screenType;
+
     @Column(nullable = false)
     private LocalDate startDate;
 
@@ -39,7 +44,7 @@ public class Screening extends DefaultEntity {
     private LocalTime startAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 30)
     private ScreeningStatus status;
 
     public static Screening create(Movie movie, Theater theater, LocalDate startDate, LocalTime startAt, ScreeningStatus status) {

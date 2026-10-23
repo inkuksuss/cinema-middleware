@@ -2,6 +2,7 @@ package com.example.cinema_middleware.v1.domain.entity;
 
 import com.example.cinema_middleware.v1.domain.entity.base.DefaultEntity;
 import com.example.cinema_middleware.v1.domain.entity.enums.SeatGrade;
+import com.example.cinema_middleware.v1.domain.entity.enums.SeatStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -15,8 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@SQLRestriction("is_delete = false")
-@SQLDelete(sql = "UPDATE theater_seat SET is_delete = true WHERE theater_seat_id = ?")
+@SQLRestriction("status != 'DELETE'")
+@SQLDelete(sql = "UPDATE theater_seat SET status = 'DELETE' WHERE theater_seat_id = ?")
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
 public class TheaterSeat extends DefaultEntity {
@@ -39,14 +40,15 @@ public class TheaterSeat extends DefaultEntity {
     private String seatColumn;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 30)
     private SeatGrade grade;
 
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal price;
 
-    @Column(nullable = false)
-    private boolean isDelete = false;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private SeatStatus status;
 
     public static TheaterSeat create(Theater theater, String seatRow, String seatColumn, SeatGrade grade) {
         Assert.notNull(theater, "theater can not be null");
@@ -59,9 +61,7 @@ public class TheaterSeat extends DefaultEntity {
         theaterSeat.seatRow = seatRow;
         theaterSeat.seatColumn = seatColumn;
         theaterSeat.grade = grade;
-        theaterSeat.price = SeatGrade.NORMAL.equals(grade) ?
-                BigDecimal.valueOf(8_000L) :
-                BigDecimal.valueOf(10_000L);
+        theaterSeat.status = SeatStatus.AVAILABLE;
 
         return theaterSeat;
     }

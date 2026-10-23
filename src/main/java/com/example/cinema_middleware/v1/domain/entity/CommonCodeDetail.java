@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.springframework.util.Assert;
 
 
 @Entity
@@ -26,6 +27,9 @@ public class CommonCodeDetail extends DefaultEntity {
     @JoinColumn(name = "common_code_group_id")
     private CommonCodeGroup commonCodeGroup;
 
+    @Column(nullable = false, length = 100)
+    private String displayName;
+
     private String description;
 
     @Column(nullable = false)
@@ -36,19 +40,13 @@ public class CommonCodeDetail extends DefaultEntity {
     @Column(nullable = false)
     private boolean isDelete = false;
 
-    public CommonCodeDetail(CommonCodeGroup commonCodeGroup, String commonCodeDetailCode, String description) {
+    public CommonCodeDetail(CommonCodeGroup commonCodeGroup, String commonCodeDetailCode, String displayName) {
+        Assert.notNull(commonCodeGroup, "commonCodeGroup can not be null");
+        Assert.notNull(commonCodeDetailCode, "commonCodeDetailCode can not be null");
+        Assert.notNull(displayName, "displayName can not be null");
+
         this.id = new CommonCodeDetailId(commonCodeGroup.getCommonCodeGroupId(), commonCodeDetailCode);
         this.commonCodeGroup = commonCodeGroup;
-        this.description = description;
-    }
-
-    public CommonCodeDetail(CommonCodeGroup commonCodeGroup, String commonCodeDetailCode, String description, Integer sortOrder) {
-        this(commonCodeGroup, commonCodeDetailCode, description);
-        this.sortOrder = sortOrder;
-    }
-
-    public CommonCodeDetail(CommonCodeGroup commonCodeGroup, String commonCodeDetailCode, String description, Integer sortOrder, String attr) {
-        this(commonCodeGroup, commonCodeDetailCode, description, sortOrder);
-        this.attr = attr;
+        this.displayName = displayName;
     }
 }

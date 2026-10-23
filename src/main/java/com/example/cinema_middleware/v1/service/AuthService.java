@@ -67,9 +67,7 @@ public class AuthService {
 
     public void logout(String accessToken) {
         Long memberId = (Long) getContext().getAuthentication().getPrincipal();
-        if (memberId == null) {
-            throw new InvalidAccessTokenException();
-        }
+        if (memberId == null) throw new InvalidAccessTokenException();
 
         authTokenRepository.deleteRefreshTokenByMemberId(memberId);
 
@@ -77,7 +75,7 @@ public class AuthService {
         // 남은 유효시간만큼 블랙리스트에 등록해서 즉시 무효화합니다.
         long remaining = jwtTokenProvider.getRemainingSeconds(accessToken);
         if (remaining > 0) {
-            authTokenRepository.saveBlacklist(accessToken, Duration.ofSeconds(remaining));
+            authTokenRepository.saveBlacklist(accessToken.replace(AuthorizationConst.PREFIX, ""), Duration.ofSeconds(remaining));
         }
     }
 
@@ -125,7 +123,7 @@ public class AuthService {
                 Duration.ofSeconds(jwtTokenProvider.getJwtProperties().refreshTokenExpireSeconds())
         );
 
-        return AuthDto.TokenIssuance.of(
+        return new AuthDto.TokenIssuance(
                 accessToken,
                 refreshToken,
                 AuthorizationConst.PREFIX,

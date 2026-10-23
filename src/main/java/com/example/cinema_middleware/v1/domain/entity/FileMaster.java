@@ -1,7 +1,7 @@
 package com.example.cinema_middleware.v1.domain.entity;
 
 import com.example.cinema_middleware.v1.domain.entity.base.DefaultEntity;
-import com.example.cinema_middleware.v1.domain.entity.enums.UsageType;
+import com.example.cinema_middleware.v1.domain.entity.enums.FileUsage;
 import com.example.cinema_middleware.v1.domain.entity.enums.TableType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -28,12 +28,12 @@ public class FileMaster extends DefaultEntity {
     private Long targetId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 30)
     private TableType targetType;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 100)
-    private UsageType usageType;
+    @Column(nullable = false, length = 30)
+    private FileUsage usage;
 
     private String originalName;
 
@@ -51,20 +51,20 @@ public class FileMaster extends DefaultEntity {
     public static FileMaster create(
             Long targetId,
             TableType targetType,
-            UsageType usageType,
+            FileUsage usage,
             String destination,
             MultipartFile file
     ) {
         Assert.notNull(targetId, "targetId can not be null");
         Assert.notNull(targetType, "targetType can not be null");
-        Assert.notNull(usageType, "usageType can not be null");
+        Assert.notNull(usage, "usage can not be null");
         Assert.notNull(file, "file can not be null");
         Assert.hasText(destination, "destination can not be null");
 
         FileMaster fileMaster = new FileMaster();
         fileMaster.targetId = targetId;
         fileMaster.targetType = targetType;
-        fileMaster.usageType = usageType;
+        fileMaster.usage = usage;
         fileMaster.originalName = file.getOriginalFilename();
         fileMaster.size = file.getSize();
         fileMaster.contentType = file.getContentType();

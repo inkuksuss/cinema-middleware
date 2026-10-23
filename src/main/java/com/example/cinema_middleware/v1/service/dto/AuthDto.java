@@ -23,9 +23,5 @@ public final class AuthDto {
             Assert.hasText(refreshToken, "refreshToken can not be null");
             Assert.notNull(tokenType, "tokenType can not be null");
         }
-
-        public static TokenIssuance of(String accessToken, String refreshToken, String tokenType, long expiredTime) {
-            return new TokenIssuance(accessToken, refreshToken, tokenType, expiredTime);
-        }
     }
 }

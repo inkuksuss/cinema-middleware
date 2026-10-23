@@ -16,13 +16,7 @@ public final class TheaterCommand {
     /** 좌석 일괄 등록 — theaterId 는 PathVariable 로 들어온다 */
     public record BulkAddSeat(
             Long theaterId,
-            List<Seat> seatList
+            List<SeatCommand.Create> seatList
     ) {
-        public record Seat(
-                String seatRow,
-                String seatColumn,
-                SeatGrade grade
-        ) {
-        }
     }
 }

@@ -1,6 +1,7 @@
 package com.example.cinema_middleware.v1.domain.entity;
 
 import com.example.cinema_middleware.v1.domain.entity.base.DefaultEntity;
+import com.example.cinema_middleware.v1.domain.entity.enums.TheaterStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -25,11 +26,9 @@ public class Theater extends DefaultEntity {
 
     private String description;
 
-    @Column(nullable = false)
-    private boolean isDelete = false;
-
-    // TODO 향후 캐시 or 비정규화할지 정한다 for 남은 자리 계산
-//    private Integer totalSeatCount = 0;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private TheaterStatus status;
 
     public static Theater create(String name, String description) {
         Assert.hasText(name, "name can not be null");
@@ -38,6 +37,7 @@ public class Theater extends DefaultEntity {
         Theater theater = new Theater();
         theater.name = name;
         theater.description = description;
+        theater.status = TheaterStatus.AVAILABLE;
 
         return theater;
     }

@@ -19,7 +19,7 @@ public final class ReservationCommand {
      * 관리자 예매 목록 검색 조건.
      * 리포지토리 전용 타입(repository.dto.search)은 서비스가 변환해 넘긴다.
      */
-    public record AdminSearch(
+    public record AdminSummaryCond(
             Pageable pageable,
             LocalDate startDate,
             LocalDate endDate,
