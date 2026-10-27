@@ -1,9 +1,8 @@
 package com.example.cinema_middleware.v1.repository;
 
-import com.example.cinema_middleware.v1.domain.entity.MovieReservation;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
-import com.example.cinema_middleware.v1.repository.dto.ReservationAdminRow;
-import com.example.cinema_middleware.v1.repository.dto.search.AdminReservationSummarySearch;
+import com.example.cinema_middleware.v1.repository.dao.ReservationDao;
+import com.example.cinema_middleware.v1.repository.dao.search.ReservationCondition;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -14,9 +13,13 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
+import static com.example.cinema_middleware.v1.domain.entity.QCinema.cinema;
+import static com.example.cinema_middleware.v1.domain.entity.QCouponIssuance.*;
 import static com.example.cinema_middleware.v1.domain.entity.QMember.*;
 import static com.example.cinema_middleware.v1.domain.entity.QMovie.*;
+import static com.example.cinema_middleware.v1.domain.entity.QMoviePayment.moviePayment;
 import static com.example.cinema_middleware.v1.domain.entity.QMovieReservation.*;
 import static com.example.cinema_middleware.v1.domain.entity.QScreening.*;
 import static com.example.cinema_middleware.v1.domain.entity.QTheater.*;
@@ -31,13 +34,38 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
     }
 
     @Override
-    public Page<MovieReservation> findReservationPageAtMember(Pageable pageable, Long memberId, @Nullable ReservationStatus status) {
-        List<MovieReservation> content = queryFactory
-                .select(movieReservation)
+    public Page<ReservationDao.MyReservation> findMyReservationPage(Pageable pageable, Long memberId, @Nullable ReservationStatus status) {
+        List<ReservationDao.MyReservation> content = queryFactory
+                .select(
+                        Projections.constructor(
+                                ReservationDao.MyReservation.class,
+                                movieReservation.id,
+                                movieReservation.code,
+                                movieReservation.status,
+
+                                movie.id,
+                                movie.title,
+                                movie.posterUrl,
+
+                                theater.id,
+                                theater.name,
+
+                                screening.id,
+                                screening.startDate,
+                                screening.startAt,
+                                screening.status,
+                                screening.screenType,
+
+                                cinema.id,
+                                cinema.name
+                        )
+                )
                 .from(movieReservation)
-                .leftJoin(movieReservation.screening, screening).fetchJoin()
-                .leftJoin(screening.movie, movie).fetchJoin()
-                .leftJoin(screening.theater, theater).fetchJoin()
+                .leftJoin(movieReservation.screening, screening)
+                .leftJoin(screening.movie, movie)
+                .leftJoin(screening.theater, theater)
+                .leftJoin(theater.cinema, cinema)
+                .leftJoin(movieReservation.member, member)
                 .where(
                         movieReservation.member.id.eq(memberId),
                         reservationStatusEq(status)
@@ -60,13 +88,38 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
     }
 
     @Override
-    public Slice<MovieReservation> findReservationSliceAtMember(Pageable pageable, Long memberId, @Nullable ReservationStatus status) {
-        List<MovieReservation> content = queryFactory
-                .select(movieReservation)
+    public Slice<ReservationDao.MyReservation> findMyReservationSlice(Pageable pageable, Long memberId, @Nullable ReservationStatus status) {
+        List<ReservationDao.MyReservation> content = queryFactory
+                .select(
+                        Projections.constructor(
+                                ReservationDao.MyReservation.class,
+                                movieReservation.id,
+                                movieReservation.code,
+                                movieReservation.status,
+
+                                movie.id,
+                                movie.title,
+                                movie.posterUrl,
+
+                                theater.id,
+                                theater.name,
+
+                                screening.id,
+                                screening.startDate,
+                                screening.startAt,
+                                screening.status,
+                                screening.screenType,
+
+                                cinema.id,
+                                cinema.name
+                        )
+                )
                 .from(movieReservation)
-                .leftJoin(movieReservation.screening, screening).fetchJoin()
-                .leftJoin(screening.movie, movie).fetchJoin()
-                .leftJoin(screening.theater, theater).fetchJoin()
+                .leftJoin(movieReservation.screening, screening)
+                .leftJoin(screening.movie, movie)
+                .leftJoin(screening.theater, theater)
+                .leftJoin(theater.cinema, cinema)
+                .leftJoin(movieReservation.member, member)
                 .where(
                         movieReservation.member.id.eq(memberId),
                         reservationStatusEq(status)
@@ -80,28 +133,100 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
     }
 
     @Override
-    public Page<ReservationAdminRow> findReservationAdminRow(AdminReservationSummarySearch search) {
-        List<ReservationAdminRow> content = queryFactory
+    public Optional<ReservationDao.MyReservationDetail> findMyReservationDetail(Long reservationId) {
+        ReservationDao.MyReservationDetail content = queryFactory
+                .select(
+                        Projections.constructor(
+                                ReservationDao.MyReservationDetail.class,
+                                movieReservation.id,
+                                movieReservation.code,
+                                movieReservation.originalAmount,
+                                movieReservation.seatNames,
+                                movieReservation.status,
+
+                                member.id,
+
+                                movie.id,
+                                movie.title,
+
+                                theater.id,
+                                theater.name,
+
+                                screening.id,
+                                screening.startDate,
+                                screening.startAt,
+                                screening.status,
+                                screening.screenType,
+
+                                cinema.id,
+                                cinema.name,
+
+                                couponIssuance.id,
+
+                                moviePayment.paidAmount,
+                                moviePayment.method,
+                                moviePayment.paidAt,
+                                moviePayment.canceledAt,
+                                moviePayment.status
+                        )
+                )
+                .from(movieReservation)
+                .leftJoin(movieReservation.screening, screening)
+                .leftJoin(screening.movie, movie)
+                .leftJoin(screening.theater, theater)
+                .leftJoin(theater.cinema, cinema)
+                .leftJoin(movieReservation.payment, moviePayment)
+                .where(
+                        movieReservation.id.eq(reservationId)
+                )
+                .fetchOne();
+
+        return Optional.of(content);
+    }
+
+    @Override
+    public Page<ReservationDao.AdminRow> findAdminRow(ReservationCondition.AdminRow condition) {
+        List<ReservationDao.AdminRow> content = queryFactory
                 .select(Projections.constructor(
-                        ReservationAdminRow.class,
+                        ReservationDao.AdminRow.class,
                         movieReservation.id,
-                        movieReservation.member.id,
-                        movieReservation.member.username,
                         movieReservation.code,
                         movieReservation.status,
                         movieReservation.createdAt,
-                        movieReservation.updatedAt
+                        movieReservation.updatedAt,
+
+                        member.id,
+                        member.username,
+
+                        movie.id,
+                        movie.title,
+
+                        theater.id,
+                        theater.name,
+
+                        screening.id,
+                        screening.startDate,
+                        screening.startAt,
+                        screening.status,
+                        screening.screenType,
+
+                        cinema.id,
+                        cinema.name
                 ))
                 .from(movieReservation)
                 .leftJoin(movieReservation.member, member)
+                .leftJoin(movieReservation.screening, screening)
+                .leftJoin(screening.movie, movie)
+                .leftJoin(screening.theater, theater)
+                .leftJoin(theater.cinema, cinema)
                 .where(
-                        movieReservation.createdAt.goe(search.getStartDate().atStartOfDay()),
-                        movieReservation.createdAt.loe(search.getEndDate().atTime(LocalTime.MAX)),
-                        codeEq(search.getCode()),
-                        reservationStatusEq(search.getStatus())
+                        movieReservation.createdAt.goe(condition.startDate().atStartOfDay()),
+                        movieReservation.createdAt.loe(condition.endDate().atTime(LocalTime.MAX)),
+                        codeEq(condition.code()),
+                        reservationStatusEq(condition.status())
                 )
-                .offset(search.getPageable().getOffset())
-                .limit(search.getPageable().getPageSize())
+                .offset(condition.pageable().getOffset())
+                .limit(condition.pageable().getPageSize())
                 .orderBy(movieReservation.createdAt.desc())
                 .fetch();
 
@@ -109,16 +234,65 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
                 .select(movieReservation.count())
                 .from(movieReservation)
                 .where(
-                        movieReservation.createdAt.goe(search.getStartDate().atStartOfDay()),
-                        movieReservation.createdAt.loe(search.getEndDate().atTime(LocalTime.MAX)),
-                        codeEq(search.getCode()),
-                        reservationStatusEq(search.getStatus())
+                        movieReservation.createdAt.goe(condition.startDate().atStartOfDay()),
+                        movieReservation.createdAt.loe(condition.endDate().atTime(LocalTime.MAX)),
+                        codeEq(condition.code()),
+                        reservationStatusEq(condition.status())
                 )
                 .fetchOne();
 
-        return new PageImpl<>(content, search.getPageable(), count);
+        return new PageImpl<>(content, condition.pageable(), count);
     }
 
+    @Override
+    public Optional<ReservationDao.AdminRowDetail> findAdminDetail(Long reservationId) {
+        ReservationDao.AdminRowDetail content = queryFactory
+                .select(Projections.constructor(
+                        ReservationDao.AdminRowDetail.class,
+                        movieReservation.id,
+                        movieReservation.code,
+                        movieReservation.status,
+                        movieReservation.createdAt,
+                        movieReservation.updatedAt,
+
+                        member.id,
+                        member.username,
+
+                        movie.id,
+                        movie.title,
+
+                        theater.id,
+                        theater.name,
+
+                        screening.id,
+                        screening.startDate,
+                        screening.startAt,
+                        screening.status,
+                        screening.screenType,
+
+                        cinema.id,
+                        cinema.name,
+
+                        couponIssuance.id,
+
+                        moviePayment.paidAmount,
+                        moviePayment.method,
+                        moviePayment.paidAt,
+                        moviePayment.canceledAt,
+                        moviePayment.status
+                ))
+                .from(movieReservation)
+                .leftJoin(movieReservation.member, member)
+                .leftJoin(movieReservation.screening, screening)
+                .leftJoin(screening.movie, movie)
+                .leftJoin(screening.theater, theater)
+                .leftJoin(theater.cinema, cinema)
+                .leftJoin(movieReservation.payment, moviePayment)
+                .where(movieReservation.id.eq(reservationId))
+                .fetchOne();
+
+        return Optional.of(content);
+    }
 
     @Override
     public boolean existsAliveByScreeningId(Long screeningId) {

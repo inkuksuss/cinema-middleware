@@ -18,7 +18,6 @@ class AdminMovieServiceTest {
     MovieRepository movieRepository;
 
     @Test
-    @Rollback(value = false)
     void test() {
     }
 

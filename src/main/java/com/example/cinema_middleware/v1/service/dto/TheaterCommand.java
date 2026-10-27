@@ -1,7 +1,5 @@
 package com.example.cinema_middleware.v1.service.dto;
 
-import com.example.cinema_middleware.v1.domain.entity.enums.SeatGrade;
-
 import java.util.List;
 
 /**
@@ -11,6 +9,13 @@ import java.util.List;
 public final class TheaterCommand {
 
     private TheaterCommand() {
+    }
+
+    public record Create(
+            Long cinemaId,
+            String name,
+            String description
+    ){
     }
 
     /** 좌석 일괄 등록 — theaterId 는 PathVariable 로 들어온다 */

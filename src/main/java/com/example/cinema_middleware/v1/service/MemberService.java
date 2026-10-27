@@ -6,6 +6,7 @@ import com.example.cinema_middleware.v1.domain.entity.enums.SocialProvider;
 import com.example.cinema_middleware.v1.repository.MemberRepository;
 import com.example.cinema_middleware.v1.service.dto.MemberDto;
 import com.example.cinema_middleware.v1.service.dto.MemberCommand;
+import com.example.cinema_middleware.v1.service.factory.MemberDtoFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,6 @@ public class MemberService {
     public MemberDto.Detail getMember(String accessToken) {
         Member findMember = authService.getMemberByAccessToken(accessToken);
 
-        return MemberDto.Detail.from(findMember);
+        return MemberDtoFactory.detail(findMember);
     }
 }

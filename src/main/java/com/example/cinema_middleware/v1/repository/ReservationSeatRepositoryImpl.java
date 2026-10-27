@@ -6,11 +6,11 @@ import jakarta.persistence.EntityManager;
 
 import static com.example.cinema_middleware.v1.domain.entity.QMovieReservationSeat.*;
 
-public class MovieReservationSeatRepositoryImpl implements MovieReservationSeatRepositoryQuery {
+public class ReservationSeatRepositoryImpl implements ReservationSeatRepositoryQuery {
 
     private final JPAQueryFactory queryFactory;
 
-    public MovieReservationSeatRepositoryImpl(EntityManager em) {
+    public ReservationSeatRepositoryImpl(EntityManager em) {
         this.queryFactory = new JPAQueryFactory(em);
     }
 

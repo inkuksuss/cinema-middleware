@@ -1,8 +1,6 @@
 package com.example.cinema_middleware.v1.service.dto;
 
-import com.example.cinema_middleware.v1.domain.entity.enums.SeatGrade;
-import com.example.cinema_middleware.v1.domain.entity.enums.SeatStatus;
-import org.springframework.util.Assert;
+import com.example.cinema_middleware.v1.domain.entity.enums.*;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -15,25 +13,15 @@ public final class SeatDto {
     private SeatDto() {
     }
 
-    private record Summary(
+    public record Summary(
             Long theaterSeatId,
-            String seatRow,
-            String seatColumn,
+            String seatNumber,
             SeatGrade grade,
             BigDecimal price,
-            SeatStatus status,
+            SeatStatus seatStatus,
 
-            Long reservationSeatId
+            Long reservationSeatId,
+            ReservationSeatStatus reservationSeatStatus
     ) {
-    }
-
-    /** 상영관 좌석 배치 응답 */
-    public record SeatMap(
-            Long theaterId,
-            List<Summary> seatList
-    ) {
-        public SeatMap {
-            Assert.notNull(theaterId, "theaterId can not be null");
-        }
     }
 }

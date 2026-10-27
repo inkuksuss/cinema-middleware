@@ -1,6 +1,6 @@
 package com.example.cinema_middleware.v1.repository;
 
-import com.example.cinema_middleware.v1.domain.entity.QTheater;
+import com.example.cinema_middleware.v1.domain.entity.QCinema;
 import com.example.cinema_middleware.v1.domain.entity.Theater;
 import com.example.cinema_middleware.v1.support.QueryDslUtils;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
+import static com.example.cinema_middleware.v1.domain.entity.QCinema.cinema;
 import static com.example.cinema_middleware.v1.domain.entity.QTheater.*;
 
 public class TheaterRepositoryImpl implements TheaterRepositoryQuery {
@@ -22,10 +23,12 @@ public class TheaterRepositoryImpl implements TheaterRepositoryQuery {
     }
 
     @Override
-    public Page<Theater> findTheaterPage(Pageable pageable) {
+    public Page<Theater> findPageInCinema(Pageable pageable, Long cinemaId) {
         List<Theater> content = queryFactory
                 .select(theater)
                 .from(theater)
+                .where(theater.cinema.id.eq(cinemaId))
+                .join(theater.cinema, cinema).fetchJoin()
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .orderBy(QueryDslUtils.getSort(pageable, theater))
@@ -34,8 +37,10 @@ public class TheaterRepositoryImpl implements TheaterRepositoryQuery {
         Long count = queryFactory
                 .select(theater.count())
                 .from(theater)
+                .where(theater.cinema.id.eq(cinemaId))
                 .fetchOne();
 
         return new PageImpl<>(content, pageable, count);
     }
+
 }

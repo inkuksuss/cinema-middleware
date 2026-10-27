@@ -108,7 +108,7 @@ public class AuthService {
         return principal.getId();
     }
 
-    public Member getMemberReference() {
+    public Member getMemberRefer() {
         return memberRepository.getReferenceById(this.getMemberId());
     }
 

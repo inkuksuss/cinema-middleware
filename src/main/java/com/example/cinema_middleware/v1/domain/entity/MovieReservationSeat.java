@@ -41,13 +41,11 @@ public class MovieReservationSeat extends DefaultEntity {
     @Column(length = 30)
     private ReservationSeatStatus status;
 
-    public static MovieReservationSeat create(MovieReservation reservation, Screening screening, TheaterSeat theaterSeat) {
-        Assert.notNull(reservation, "reservation can not be null");
+    public static MovieReservationSeat createTemp(Screening screening, TheaterSeat theaterSeat) {
         Assert.notNull(screening, "screening can not be null");
         Assert.notNull(theaterSeat, "theaterSeat can not be null");
 
         MovieReservationSeat movieReservationSeat = new MovieReservationSeat();
-        movieReservationSeat.reservation = reservation;
         movieReservationSeat.screening = screening;
         movieReservationSeat.theaterSeat = theaterSeat;
         movieReservationSeat.status = ReservationSeatStatus.RESERVED;

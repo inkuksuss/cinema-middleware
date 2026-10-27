@@ -6,5 +6,5 @@ import org.springframework.data.domain.Pageable;
 
 public interface TheaterRepositoryQuery {
 
-    Page<Theater> findTheaterPage(Pageable pageable);
+    Page<Theater> findPageInCinema(Pageable pageable, Long cinemaId);
 }

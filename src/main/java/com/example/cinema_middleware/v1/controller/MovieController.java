@@ -6,6 +6,7 @@ import com.example.cinema_middleware.v1.service.MovieService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -23,10 +24,8 @@ public class MovieController {
     private final MovieService movieService;
 
     @GetMapping("/")
-    public ResponseEntity<Result<Page<MovieDto.Summary>>> getMovieSummary(@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 7) Pageable pageable) {
-        //TODO
-        // front 페이지는 1번 시작이지만, 조회는 0번부터 시작
-        Page<MovieDto.Summary> result = movieService.getMovieSummaryPage(pageable);
+    public ResponseEntity<Result<Slice<MovieDto.Summary>>> getMovieSummary(@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 7) Pageable pageable) {
+        Slice<MovieDto.Summary> result = movieService.getMovieSummaryPage(pageable);
 
         return ResponseEntity
                 .status(HttpStatus.OK)

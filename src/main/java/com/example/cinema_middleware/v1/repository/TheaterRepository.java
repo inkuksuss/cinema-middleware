@@ -11,5 +11,4 @@ import java.util.Optional;
 
 public interface TheaterRepository extends JpaRepository<Theater, Long>, TheaterRepositoryQuery {
 
-    Optional<Theater> findByName(@Param(value = "name") String name);
 }

@@ -6,6 +6,7 @@ import com.example.cinema_middleware.v1.domain.entity.Theater;
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieAgeRating;
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieCategory;
 import com.example.cinema_middleware.v1.domain.entity.enums.ScreeningStatus;
+import com.example.cinema_middleware.v1.repository.CinemaRepository;
 import com.example.cinema_middleware.v1.repository.MovieRepository;
 import com.example.cinema_middleware.v1.repository.ScreeningRepository;
 import com.example.cinema_middleware.v1.repository.TheaterRepository;
@@ -38,12 +39,15 @@ class ScreeningServiceTest {
     @Autowired
     ScreeningService screeningService;
 
+    @Autowired
+    CinemaRepository cinemaRepository;
+
     @Test
     @DisplayName("getScreeningSummaryPageByDate 성공")
-    void getScreeningSummaryByDate() {
+    void getSummaryByDate() {
         //given
         LocalDateTime now = LocalDateTime.now();
-        Theater theater = Theater.create("상영관1", "");
+        Theater theater = Theater.create(cinemaRepository.getReferenceById(1L), "상영관1", "");
         theaterRepository.save(theater);
         Movie movie = new Movie();
         movie.setTitle("hello");
@@ -62,7 +66,7 @@ class ScreeningServiceTest {
         screeningRepository.saveAll(list);
 
         //when
-        List<ScreeningDto.Summary> result = screeningService.getScreeningSummaryByDate(now.toLocalDate(), null);
+        List<ScreeningDto.Summary> result = screeningService.getSummaryByDate(now.toLocalDate(), 1L, null);
 
         //then
         Assertions.assertThat(result.size()).isEqualTo(15);

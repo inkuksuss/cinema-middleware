@@ -3,7 +3,6 @@ package com.example.cinema_middleware.v1.service;
 import com.example.cinema_middleware.v1.domain.entity.*;
 import com.example.cinema_middleware.v1.domain.entity.enums.*;
 import com.example.cinema_middleware.v1.repository.*;
-import com.example.cinema_middleware.v1.repository.dto.SeatData;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
@@ -29,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 class MovieReservationSeatServiceTest {
 
     @Autowired
-    MovieReservationSeatRepository movieReservationSeatRepository;
+    ReservationSeatRepository movieReservationSeatRepository;
     @Autowired
     ScreeningRepository screeningRepository;
     @Autowired
@@ -42,6 +41,8 @@ class MovieReservationSeatServiceTest {
     MemberRepository memberRepository;
     @Autowired
     MovieRepository movieRepository;
+    @Autowired
+    CinemaRepository cinemaRepository;
 
     @AfterEach
     void clear() {
@@ -70,7 +71,7 @@ class MovieReservationSeatServiceTest {
                 SocialProvider.NORMAL
         );
         Member savedMember = memberRepository.save(member);
-        Theater theater = Theater.create("theater1", "desc");
+        Theater theater = Theater.create(cinemaRepository.getReferenceById(1L), "theater1", "desc");
         Theater savedTheater = theaterRepository.save(theater);
         Movie movie = new Movie();
         movie.setTitle("hello");
@@ -84,7 +85,7 @@ class MovieReservationSeatServiceTest {
         Movie savedMovie = movieRepository.save(movie);
         Screening screening = Screening.create(savedMovie, savedTheater, now, LocalTime.MIN, ScreeningStatus.ON_SALE);
         Screening savedScreening = screeningRepository.save(screening);
-        MovieReservation movieReservation = MovieReservation.create(savedMember, savedScreening, List.of());
+        MovieReservation movieReservation = MovieReservation.create(savedMember, savedScreening, "a", "a", BigDecimal.TEN);
         MovieReservation savedReservation = movieReservationRepository.save(movieReservation);
         TheaterSeat theaterSeat = TheaterSeat.create(savedTheater, "1", "a", SeatGrade.NORMAL);
         TheaterSeat savedTheaterSeat = theaterSeatRepository.save(theaterSeat);
@@ -98,7 +99,7 @@ class MovieReservationSeatServiceTest {
         for (int i = 0; i < 10; i++) {
             es.submit(() -> {
                 try {
-                    MovieReservationSeat movieReservationSeat = MovieReservationSeat.create(savedReservation, savedScreening, savedTheaterSeat);
+                    MovieReservationSeat movieReservationSeat = MovieReservationSeat.createTemp(savedScreening, savedTheaterSeat);
                     startLatch.await();
                     movieReservationSeatRepository.save(movieReservationSeat);
                 }
@@ -142,7 +143,7 @@ class MovieReservationSeatServiceTest {
                 SocialProvider.NORMAL
         );
         Member savedMember = memberRepository.save(member);
-        Theater theater = Theater.create("theater1", "desc");
+        Theater theater = Theater.create(cinemaRepository.getReferenceById(1L), "theater1", "desc");
         Theater savedTheater = theaterRepository.save(theater);
         Movie movie = new Movie();
         movie.setTitle("hello");
@@ -156,7 +157,7 @@ class MovieReservationSeatServiceTest {
         Movie savedMovie = movieRepository.save(movie);
         Screening screening = Screening.create(savedMovie, savedTheater, now, LocalTime.MIN, ScreeningStatus.ON_SALE);
         Screening savedScreening = screeningRepository.save(screening);
-        MovieReservation movieReservation = MovieReservation.create(savedMember, savedScreening, List.of());
+        MovieReservation movieReservation = MovieReservation.create(savedMember, savedScreening, "a", "b", BigDecimal.TEN);
         MovieReservation savedReservation = movieReservationRepository.save(movieReservation);
         TheaterSeat theaterSeat = TheaterSeat.create(savedTheater, "1", "a", SeatGrade.NORMAL);
         TheaterSeat savedTheaterSeat = theaterSeatRepository.save(theaterSeat);
@@ -170,7 +171,7 @@ class MovieReservationSeatServiceTest {
         for (int i = 0; i < 10; i++) {
             es.submit(() -> {
                 try {
-                    MovieReservationSeat movieReservationSeat = MovieReservationSeat.create(savedReservation, savedScreening, savedTheaterSeat);
+                    MovieReservationSeat movieReservationSeat = MovieReservationSeat.createTemp(savedScreening, savedTheaterSeat);
                     movieReservationSeat.giveUpSeat();
                     startLatch.await();
                     movieReservationSeatRepository.save(movieReservationSeat);

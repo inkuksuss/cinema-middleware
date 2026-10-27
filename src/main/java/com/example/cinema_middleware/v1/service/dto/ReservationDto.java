@@ -26,7 +26,6 @@ public final class ReservationDto {
     public record Summary(
             Long reservationId,
             String code,
-            BigDecimal totalPrice,
             ReservationStatus status,
 
             Long movieId,
@@ -40,6 +39,7 @@ public final class ReservationDto {
             LocalDate screeningStartDate,
             LocalTime screeningStartAt,
             ScreeningStatus screeningStatus,
+            ScreenType screenType,
 
             Long cinemaId,
             String cinemaName
@@ -50,7 +50,7 @@ public final class ReservationDto {
     public record Detail(
             Long reservationId,
             String code,
-            BigDecimal totalPrice,
+            BigDecimal originalAmount,
             String seatNames,
             ReservationStatus status,
 
@@ -64,12 +64,12 @@ public final class ReservationDto {
             LocalDate screeningStartDate,
             LocalTime screeningStartAt,
             ScreeningStatus screeningStatus,
-
-            Long couponId,
-            String couponName,
+            ScreenType screenType,
 
             Long cinemaId,
             String cinemaName,
+
+            Long couponIssuanceId,
 
             BigDecimal paidAmount,
             PaymentMethod method,
@@ -108,12 +108,12 @@ public final class ReservationDto {
     public record AdminDetail(
             Long reservationId,
             String code,
-            BigDecimal totalPrice,
+            BigDecimal originalAmount,
             String seatNames,
             ReservationStatus status,
 
             Long memberId,
-            String username,
+            String memberName,
 
             Long movieId,
             String movieTitle,
@@ -125,18 +125,18 @@ public final class ReservationDto {
             LocalDate screeningStartDate,
             LocalTime screeningStartAt,
             ScreeningStatus screeningStatus,
-
-            Long couponId,
-            String couponName,
+            ScreenType screenType,
 
             Long cinemaId,
             String cinemaName,
 
+            Long couponIssuanceId,
+
             BigDecimal paidAmount,
             PaymentMethod method,
-            PaymentStatus paymentStatus,
             LocalDateTime paidAt,
-            LocalDateTime canceledAt
+            LocalDateTime canceledAt,
+            PaymentStatus paymentStatus
     ) {
     }
 }

@@ -2,10 +2,14 @@ package com.example.cinema_middleware.v1.service;
 
 import com.example.cinema_middleware.v1.domain.entity.Theater;
 import com.example.cinema_middleware.v1.domain.entity.TheaterSeat;
-import com.example.cinema_middleware.v1.repository.MovieReservationSeatRepository;
+import com.example.cinema_middleware.v1.repository.ReservationSeatRepository;
 import com.example.cinema_middleware.v1.repository.TheaterSeatRepository;
+import com.example.cinema_middleware.v1.service.dto.SeatCommand;
+import com.example.cinema_middleware.v1.service.dto.SeatDto;
 import com.example.cinema_middleware.v1.service.dto.TheaterDto;
 import com.example.cinema_middleware.v1.service.dto.TheaterCommand;
+import com.example.cinema_middleware.v1.service.factory.SeatDtoFactory;
+import com.example.cinema_middleware.v1.service.factory.TheaterDtoFactory;
 import com.example.cinema_middleware.v1.support.exception.SeatInUseException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,18 +23,18 @@ import java.util.List;
 public class AdminSeatService {
 
     private final TheaterSeatRepository seatRepository;
-    private final MovieReservationSeatRepository reservationSeatRepository;
+    private final ReservationSeatRepository reservationSeatRepository;
 
-    public List<TheaterDto.SeatSummary> getAllByTheaterId(Long theaterId) {
+    public List<SeatDto.Summary> getAllByTheaterId(Long theaterId) {
         Assert.notNull(theaterId, "theaterId can not be null");
 
         return seatRepository.findAllByTheaterId(theaterId)
                 .stream()
-                .map(ts -> TheaterDto.SeatSummary.from(ts))
+                .map(SeatDtoFactory::summary)
                 .toList();
     }
 
-    public void saveAll(Theater theater, List<TheaterCommand.BulkAddSeat.Seat> seatList) {
+    public void saveAll(Theater theater, List<SeatCommand.Create> seatList) {
         Assert.notNull(theater, "theater can not be null");
         Assert.notEmpty(seatList, "seatList can not be empty");
 
@@ -39,7 +43,7 @@ public class AdminSeatService {
         int offset = 1;
 
         for (int i = 0; i < seatList.size(); i++) {
-            TheaterCommand.BulkAddSeat.Seat seat = seatList.get(i);
+            SeatCommand.Create seat = seatList.get(i);
             holder.add(TheaterSeat.create(
                     theater,
                     seat.seatRow(),

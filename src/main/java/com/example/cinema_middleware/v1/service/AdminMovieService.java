@@ -2,11 +2,12 @@ package com.example.cinema_middleware.v1.service;
 
 import com.example.cinema_middleware.v1.domain.entity.Movie;
 import com.example.cinema_middleware.v1.domain.entity.enums.MovieStatus;
-import com.example.cinema_middleware.v1.domain.entity.enums.UsageType;
+import com.example.cinema_middleware.v1.domain.entity.enums.FileUsage;
 import com.example.cinema_middleware.v1.domain.entity.enums.TableType;
 import com.example.cinema_middleware.v1.repository.MovieRepository;
 import com.example.cinema_middleware.v1.service.dto.*;
 import com.example.cinema_middleware.v1.service.dto.forms.AddFileForm;
+import com.example.cinema_middleware.v1.service.factory.MovieDtoFactory;
 import com.example.cinema_middleware.v1.support.exception.TargetNotFoundException;
 import jakarta.annotation.Nullable;
 import org.springframework.data.domain.Page;
@@ -28,7 +29,7 @@ public class AdminMovieService {
     public Page<MovieDto.Summary> getMovieSummary(Pageable pageable, @Nullable String title, @Nullable MovieStatus status) {
         Page<Movie> moviePage = movieRepository.findMoviePage(pageable, title, status);
 
-        return moviePage.map(MovieDto.Summary::from);
+        return moviePage.map(MovieDtoFactory::summary);
     }
 
     public MovieDto.Detail getMovieDetail(Long movieId) {
@@ -37,7 +38,7 @@ public class AdminMovieService {
         Movie movie = movieRepository.findById(movieId)
                 .orElseThrow(() -> { throw new TargetNotFoundException(); });
 
-        return MovieDto.Detail.from(movie);
+        return MovieDtoFactory.detail(movie);
     }
 
     @Transactional
@@ -54,7 +55,7 @@ public class AdminMovieService {
                 command.category()
         ));
 
-        AddFileForm addFileForm = new AddFileForm(savedMovie.getId(), TableType.MOVIE, UsageType.THUMBNAIL, command.thumbnail());
+        AddFileForm addFileForm = new AddFileForm(savedMovie.getId(), TableType.MOVIE, FileUsage.THUMBNAIL, command.thumbnail());
         String destination = fileService.append(addFileForm);
 
         savedMovie.setPosterUrl(destination);

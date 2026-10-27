@@ -4,6 +4,7 @@ import com.example.cinema_middleware.v1.domain.entity.enums.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -18,21 +19,21 @@ public final class ScreeningDto {
     /** 사용자 상영 목록 — 잔여 좌석 수 포함 */
     public record Summary(
             Long id,
-            LocalDate startDate,
-            LocalTime startAt,
+            LocalDateTime startAt,
             ScreenType type,
             ScreeningStatus status,
 
             Long movieId,
             String movieTitle,
-            String moviePosterUrl,
             Integer movieRunningTime,
             MovieAgeRating movieAgeRating,
+            String moviePosterUrl,
 
             Long theaterId,
             String theaterName,
 
             Long cinemaId,
+            Long cinemaName,
 
             Integer totalSeatCount,
             Integer availableSeatCount
@@ -66,8 +67,8 @@ public final class ScreeningDto {
             Long id,
             LocalDate startDate,
             LocalTime startAt,
-            ScreenType type,
             ScreeningStatus status,
+            ScreenType type,
 
             Long movieId,
             String movieTitle,
@@ -78,27 +79,27 @@ public final class ScreeningDto {
             String theaterName,
 
             Long cinemaId,
-            Long cinemaName,
-
-            Integer totalSeatCount,
-            Integer availableSeatCount
+            String cinemaName
     ) {
     }
 
     /** 관리자 상영 상세 */
     public record AdminDetail(
-            Long id,
+            Long screeningId,
             LocalDate startDate,
             LocalTime startAt,
-            ScreenType type,
             ScreeningStatus status,
+            ScreenType screenType,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt,
+            Long createdBy,
+            Long updatedBy,
 
             Long movieId,
             String movieTitle,
             Integer movieRunningTime,
             MovieAgeRating movieAgeRating,
             MovieCategory movieCategory,
-            String moviePosterUrl,
 
             Long theaterId,
             String theaterName,

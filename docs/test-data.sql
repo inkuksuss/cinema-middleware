@@ -2,9 +2,9 @@
 -- cinema-middleware 테스트 데이터 (고정)
 -- 대상: MySQL 8.4 / DB: cinema
 --
--- 실행할 때마다 15개 테이블을 TRUNCATE 한 뒤 동일 데이터를 재삽입한다 (멱등).
--- movie_reservation_history 는 TRUNCATE 만 하고 데이터는 넣지 않는다
--- (예매 변경 이력은 애플리케이션이 변경 시점에 쌓는 것이라 더미 근거가 없다).
+-- 실행할 때마다 17개 테이블을 TRUNCATE 한 뒤 동일 데이터를 재삽입한다 (멱등).
+-- movie_reservation_history / movie_payment_history 는 TRUNCATE 만 하고 데이터는 넣지 않는다
+-- (변경 이력은 애플리케이션이 변경 시점에 쌓는 것이라 더미 근거가 없다).
 -- 스키마(테이블)는 이 파일에서 만들지 않는다 — 앱 부팅 또는
 -- scripts/load-test-data.sh 가 먼저 schema.sql 을 적재한 상태를 전제로 한다.
 --
@@ -13,7 +13,7 @@
 -- │ scripts/load-test-data.sh 는 BASE_DATE 환경변수로 이 두 줄을 치환한다.     │
 -- └───────────────────────────────────────────────────────────────────────────┘
 --
--- 데이터 규모: member 200 / movie 120 / theater 20 / theater_seat 2000 /
+-- 데이터 규모: member 200 / movie 120 / cinema 3 / theater 20 / theater_seat 2000 /
 --   screening 500 / movie_reservation 468 / movie_reservation_seat ~1335 /
 --   movie_payment ~365 / coupon 100 / coupon_issuance 300 / file_master 120 /
 --   common_code_group 15 / common_code_detail 120
@@ -28,7 +28,11 @@
 --   - 예매 상태: 전체 SUCCESS ~78% / CANCELED ~11% / EXPIRED ~7% / PENDING ~4%.
 --     (한산 회차만 보면 기존과 동일한 70/15/10/5% — 인기 회차는 "75석 활성 점유"
 --      의미를 보존하려 전부 SUCCESS로 고정해서 전체 비율이 SUCCESS 쪽으로 쏠린다.)
---     SUCCESS 예매만 movie_payment 1행.
+--     SUCCESS 예매만 movie_payment 1행(status='COMPLETE'), 그 결제를
+--     movie_reservation.movie_payment_id 가 확정 결제로 가리킨다(§8-1).
+--   - member.status: 전원 'ACTIVE' (soft delete 는 status='DELETE', is_delete 컬럼 없음).
+--   - movie_reservation.expired_at: NOT NULL. EXPIRED 는 과거, 그 외는 생성 시각(@now)+10분
+--     (엔티티 MovieReservation.create() 의 홀드 시간과 동일). 예매 canceled_at 컬럼은 없다.
 --   - 좌석 점유: 인기 회차 6개는 각각 80석 중 75석(75%) 점유 — 그 75석을
 --     "하나의 예매"가 아니라 19건의 서로 다른 예매(1~4석씩)가 나눠 점유한다
 --     (screening 하나를 여러 예매가 공유하는 현실적인 동시 예매 모델링).
@@ -44,11 +48,17 @@
 --     NULL 은 서로 다른 값으로 취급). 인기 회차처럼 여러 예매가 screening_id 를
 --     공유해도 "screening 내 예매 순번(p) × 4 + 예매 내 좌석 순번(k)" 산술로
 --     활성 좌석 슬롯이 예매 간 절대 겹치지 않는다.
---     좌석 가격은 theater_seat.price 로 이관 — 이 테이블에는 price 컬럼 없음.
---   - 가격: theater_seat.price 는 등급별(NORMAL 8000 / ADVANCED 10000, 엔티티
---     TheaterSeat.of() 규칙). screening 에는 price 컬럼이 없다(좌석 가격으로 이관).
---     movie_reservation.total_price 는 배정된 좌석의 theater_seat.price 합계
---     (배정 좌석은 전부 A~H 행 = NORMAL 이라 8000 * 좌석 수).
+--     좌석 가격 컬럼은 이 테이블에도 theater_seat 에도 없다(SeatGrade enum 의 price).
+--   - 가격: theater_seat 에 price 컬럼이 없고 screening 에도 없다.
+--     movie_reservation.total_price 는 고정 더미 값으로 8000 * 좌석 수
+--     (배정 좌석은 전부 A~H 행 = NORMAL 등급).
+--   - cinema / theater / theater_seat: soft delete 는 status='DELETE' (is_delete 컬럼 없음).
+--     테스트 데이터에 DELETE 행은 두지 않는다. theater_seat 는 전부 AVAILABLE.
+--   - screening.screen_type: ScreenType 키(V_2D/V_4D/V_SCREENX). 4DX 관(13,14)=V_4D,
+--     17·20관=V_SCREENX, 나머지=V_2D.
+--   - coupon: usage_type(CouponUsage)/discount_type(DiscountType)/status(CouponStatus) 컬럼.
+--     usage 는 MySQL 예약어라 usage_type. 전부 발급 가능 구간이므로 status='CAN_ISSUE'.
+--   - common_code_detail.display_name: NOT NULL. description 과 같은 값으로 채운다.
 --   - 쿠폰 사용: SUCCESS 예매 중 약 30% 만 coupon_issuance_id 연결(~109건).
 --     연결된 coupon_issuance 는 status='USED'. 각 발급건은 최대 1개 예매에만 연결.
 --   - movie.status: close_date 가 @today 이전(상영 종료)이면 'HIDDEN', 아니면 'DISPLAY'.
@@ -76,6 +86,7 @@ TRUNCATE TABLE log_master;
 TRUNCATE TABLE file_master;
 TRUNCATE TABLE coupon_issuance;
 TRUNCATE TABLE coupon;
+TRUNCATE TABLE movie_payment_history;
 TRUNCATE TABLE movie_payment;
 TRUNCATE TABLE movie_reservation_history;
 TRUNCATE TABLE movie_reservation_seat;
@@ -83,6 +94,7 @@ TRUNCATE TABLE movie_reservation;
 TRUNCATE TABLE screening;
 TRUNCATE TABLE theater_seat;
 TRUNCATE TABLE theater;
+TRUNCATE TABLE cinema;
 TRUNCATE TABLE movie;
 TRUNCATE TABLE member;
 
@@ -90,10 +102,12 @@ TRUNCATE TABLE member;
 -- =============================================================================
 -- 1. member — 200행 (TimeEntity: created_by/updated_by 없음)
 --    grade: 1~150 COMMON, 151~190 VIP, 191~198 MANAGE_ADMIN, 199~200 SUPER_ADMIN
+--    status(MemberStatus): 전원 'ACTIVE'. soft delete 는 status='DELETE' 로 대체되어
+--      is_delete 컬럼이 없다(@SQLRestriction("status <> 'DELETE'")).
 -- =============================================================================
 INSERT INTO member
   (member_id, email, username, password, phone_number, birthday,
-   grade, social_provider, created_at, updated_at, is_delete)
+   grade, social_provider, status, created_at, updated_at)
 WITH RECURSIVE seq(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM seq WHERE n < 200)
 SELECT
   n,
@@ -109,7 +123,8 @@ SELECT
     ELSE 'ROLE_SUPER_ADMIN'
   END,
   ELT(1 + (n % 3), 'KAKAO', 'GOOGLE', 'NORMAL'),
-  @now, @now, 0
+  'ACTIVE',
+  @now, @now
 FROM seq;
 
 
@@ -145,42 +160,56 @@ FROM seq;
 
 
 -- =============================================================================
+-- 2-1. cinema — 3행 (DefaultEntity). soft delete 는 status='DELETE' (is_delete 컬럼 없음)
+--      status(CinemaStatus): OPEN 2 / CLOSE 1
+-- =============================================================================
+INSERT INTO cinema
+  (cinema_id, name, description, status, created_at, updated_at, created_by, updated_by)
+VALUES
+  (1, '강남점', '서울 강남 본점',   'OPEN',  @now, @now, NULL, NULL),
+  (2, '홍대점', '서울 마포 지점',   'OPEN',  @now, @now, NULL, NULL),
+  (3, '부산점', '부산 해운대 지점', 'CLOSE', @now, @now, NULL, NULL);
+
+
+-- =============================================================================
 -- 3. theater — 20행 (DefaultEntity)
 --    좌석 PK 규칙: 관 T 의 좌석 PK = (T-1)*100 + 1 ~ T*100
+--    status(TheaterStatus): 전원 'AVAILABLE' (soft delete 는 status='DELETE', is_delete 컬럼 없음)
 -- =============================================================================
 INSERT INTO theater
-  (theater_id, name, description, created_at, updated_at, created_by, updated_by, is_delete)
+  (theater_id, name, description, status, created_at, updated_at, created_by, updated_by)
 VALUES
-  ( 1, '1관',  '2D 일반 상영관',      @now, @now, NULL, NULL, 0),
-  ( 2, '2관',  '2D 일반 상영관',      @now, @now, NULL, NULL, 0),
-  ( 3, '3관',  '2D 일반 상영관',      @now, @now, NULL, NULL, 0),
-  ( 4, '4관',  '3D 상영관',           @now, @now, NULL, NULL, 0),
-  ( 5, '5관',  '3D 상영관',           @now, @now, NULL, NULL, 0),
-  ( 6, '6관',  '커플석 특별관',       @now, @now, NULL, NULL, 0),
-  ( 7, '7관',  '2D 일반 상영관',      @now, @now, NULL, NULL, 0),
-  ( 8, '8관',  '2D 일반 상영관',      @now, @now, NULL, NULL, 0),
-  ( 9, '9관',  '리클라이너 상영관',   @now, @now, NULL, NULL, 0),
-  (10, '10관', '리클라이너 상영관',   @now, @now, NULL, NULL, 0),
-  (11, '11관', '2D 일반 상영관',      @now, @now, NULL, NULL, 0),
-  (12, '12관', '2D 일반 상영관',      @now, @now, NULL, NULL, 0),
-  (13, '13관', '4DX 상영관',          @now, @now, NULL, NULL, 0),
-  (14, '14관', '4DX 상영관',          @now, @now, NULL, NULL, 0),
-  (15, '15관', '2D 일반 상영관',      @now, @now, NULL, NULL, 0),
-  (16, '16관', '2D 일반 상영관',      @now, @now, NULL, NULL, 0),
-  (17, '17관', '돌비 애트모스 상영관', @now, @now, NULL, NULL, 0),
-  (18, '18관', '2D 일반 상영관',      @now, @now, NULL, NULL, 0),
-  (19, '19관', '프라이빗 소형관',     @now, @now, NULL, NULL, 0),
-  (20, '20관', 'IMAX 상영관',         @now, @now, NULL, NULL, 0);
+  ( 1, '1관',  '2D 일반 상영관',      'AVAILABLE', @now, @now, NULL, NULL),
+  ( 2, '2관',  '2D 일반 상영관',      'AVAILABLE', @now, @now, NULL, NULL),
+  ( 3, '3관',  '2D 일반 상영관',      'AVAILABLE', @now, @now, NULL, NULL),
+  ( 4, '4관',  '3D 상영관',           'AVAILABLE', @now, @now, NULL, NULL),
+  ( 5, '5관',  '3D 상영관',           'AVAILABLE', @now, @now, NULL, NULL),
+  ( 6, '6관',  '커플석 특별관',       'AVAILABLE', @now, @now, NULL, NULL),
+  ( 7, '7관',  '2D 일반 상영관',      'AVAILABLE', @now, @now, NULL, NULL),
+  ( 8, '8관',  '2D 일반 상영관',      'AVAILABLE', @now, @now, NULL, NULL),
+  ( 9, '9관',  '리클라이너 상영관',   'AVAILABLE', @now, @now, NULL, NULL),
+  (10, '10관', '리클라이너 상영관',   'AVAILABLE', @now, @now, NULL, NULL),
+  (11, '11관', '2D 일반 상영관',      'AVAILABLE', @now, @now, NULL, NULL),
+  (12, '12관', '2D 일반 상영관',      'AVAILABLE', @now, @now, NULL, NULL),
+  (13, '13관', '4DX 상영관',          'AVAILABLE', @now, @now, NULL, NULL),
+  (14, '14관', '4DX 상영관',          'AVAILABLE', @now, @now, NULL, NULL),
+  (15, '15관', '2D 일반 상영관',      'AVAILABLE', @now, @now, NULL, NULL),
+  (16, '16관', '2D 일반 상영관',      'AVAILABLE', @now, @now, NULL, NULL),
+  (17, '17관', '돌비 애트모스 상영관', 'AVAILABLE', @now, @now, NULL, NULL),
+  (18, '18관', '2D 일반 상영관',      'AVAILABLE', @now, @now, NULL, NULL),
+  (19, '19관', '프라이빗 소형관',     'AVAILABLE', @now, @now, NULL, NULL),
+  (20, '20관', 'IMAX 상영관',         'AVAILABLE', @now, @now, NULL, NULL);
 
 
 -- =============================================================================
 -- 4. theater_seat — 2000행 (DefaultEntity). 20관 × 10행(A~J) × 10열(1~10)
 --    좌석 PK = (theater_id-1)*100 + (row-1)*10 + col
---    9~10행(I, J)은 ADVANCED(10000), 나머지 NORMAL(8000) — TheaterSeat.of() 규칙
+--    9~10행(I, J)은 ADVANCED, 나머지 NORMAL. price 컬럼 없음(SeatGrade enum 의 price).
+--    status(SeatStatus): 전원 'AVAILABLE' (soft delete 는 status='DELETE', is_delete 컬럼 없음)
 -- =============================================================================
 INSERT INTO theater_seat
-  (theater_seat_id, theater_id, seat_row, seat_column, grade, price,
-   created_at, updated_at, created_by, updated_by, is_delete)
+  (theater_seat_id, theater_id, seat_row, seat_column, grade, status,
+   created_at, updated_at, created_by, updated_by)
 WITH RECURSIVE
   t(theater_id) AS (SELECT 1 UNION ALL SELECT theater_id + 1 FROM t WHERE theater_id < 20),
   r(ri)         AS (SELECT 1 UNION ALL SELECT ri + 1 FROM r WHERE ri < 10),
@@ -191,8 +220,8 @@ SELECT
   CHAR(64 + r.ri),                                  -- 'A' ~ 'J'
   CAST(c.ci AS CHAR),                               -- '1' ~ '10'
   CASE WHEN r.ri >= 9 THEN 'ADVANCED' ELSE 'NORMAL' END,
-  CASE WHEN r.ri >= 9 THEN 10000.00 ELSE 8000.00 END,   -- grade 와 일치
-  @now, @now, NULL, NULL, 0
+  'AVAILABLE',
+  @now, @now, NULL, NULL
 FROM t CROSS JOIN r CROSS JOIN c;
 
 
@@ -205,13 +234,20 @@ FROM t CROSS JOIN r CROSS JOIN c;
 --    (@SQLRestriction("status != 'DELETE'")). 테스트 데이터에 DELETE 행은 두지 않는다.
 -- =============================================================================
 INSERT INTO screening
-  (screening_id, movie_id, theater_id, start_date, start_at, status,
+  (screening_id, movie_id, theater_id, screen_type, start_date, start_at, status,
    created_at, updated_at, created_by, updated_by)
 WITH RECURSIVE seq(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM seq WHERE n < 500)
 SELECT
   n,
   1 + (n % 120),
   1 + (n % 20),
+  CASE 1 + (n % 20)                      -- theater_id 기준 (4DX 관=V_4D, 17·20관=V_SCREENX)
+    WHEN 13 THEN 'V_4D'
+    WHEN 14 THEN 'V_4D'
+    WHEN 17 THEN 'V_SCREENX'
+    WHEN 20 THEN 'V_SCREENX'
+    ELSE 'V_2D'
+  END,
   @today + INTERVAL ((n % 45) - 30) DAY,
   CAST(ELT(1 + (n % 5), '10:00:00', '13:00:00', '16:00:00', '19:00:00', '22:00:00') AS TIME),
   CASE
@@ -244,10 +280,12 @@ FROM seq;
 --    coupon_issuance_id: SUCCESS 예매에만 순번(sr)을 매겨 sr % 10 < 3 (정확히 30%)
 --      일 때 배정. 배정값 = 그 대상들에 다시 매긴 순번 cr (1부터, 최대 ~109).
 --      §10 에서 coupon_issuance 1..120 을 status='USED' 로 맞춰 정합.
+--    expired_at(NOT NULL): EXPIRED 는 과거 시각, 그 외는 @now + 10분(생성 시 홀드 만료).
+--    movie_payment_id: 여기서는 NULL — §8-1 에서 SUCCESS 예매만 확정 결제로 연결한다.
 -- =============================================================================
 INSERT INTO movie_reservation
   (movie_reservation_id, member_id, screening_id, coupon_issuance_id, code, seat_names,
-   total_price, status, expired_at, canceled_at, created_at, updated_at, created_by, updated_by)
+   total_price, status, expired_at, created_at, updated_at, created_by, updated_by)
 WITH RECURSIVE
   seq(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM seq WHERE n < 468),
   base AS (
@@ -307,10 +345,8 @@ SELECT
   status,
   CASE
     WHEN status = 'EXPIRED' THEN @now - INTERVAL ((n % 15) + 1) DAY
-    WHEN status = 'PENDING' THEN @now + INTERVAL 10 MINUTE
-    ELSE NULL
+    ELSE @now + INTERVAL 10 MINUTE
   END,
-  CASE WHEN status = 'CANCELED' THEN @now - INTERVAL ((n % 20) + 1) DAY ELSE NULL END,
   @now, @now, NULL, NULL
 FROM couponed;
 
@@ -335,7 +371,7 @@ FROM couponed;
 --    비활성 좌석은 status=NULL 이라 활성 좌석과 슬롯이 겹쳐도 uk_seat_hold 상 무관하며,
 --    이 데이터셋 구조상 같은 screening 에 비활성 예매가 2건 이상 존재하지 않아
 --    비활성끼리도 겹치지 않는다.
---    좌석 가격은 theater_seat.price 로 이관됨 — 이 테이블에 price 컬럼 없음.
+--    좌석 가격 컬럼은 없다(SeatGrade enum 의 price).
 -- =============================================================================
 INSERT INTO movie_reservation_seat
   (movie_reservation_seat_id, movie_reservation_id, screening_id, theater_seat_id,
@@ -391,37 +427,57 @@ SET r.seat_names = agg.seat_names;
 
 -- =============================================================================
 -- 8. movie_payment — SUCCESS 예매당 1행 (~365행, DefaultEntity)
---    예매 1 : 결제 N 구조(유니크 제약 없음)지만 테스트 데이터는 예매당 1행만 넣는다.
+--    예매 : 결제 시도 = 1:N 구조지만 테스트 데이터는 승인된 시도 1행만 넣는다
+--    (실패·재시도 행은 두지 않는다).
+--    idempotency_key: 'PAY-' + 예매 code (UNIQUE, 예매 code 가 유일하므로 충돌 없음).
+--    status='COMPLETE', paid_at=@now. 부분 결제 미지원이라 paid_amount = total_price.
 --    soft delete 없음 → is_delete 컬럼 없음.
 -- =============================================================================
 INSERT INTO movie_payment
-  (movie_payment_id, movie_reservation_id, paid_amount, status, method, created_at, updated_at, created_by, updated_by)
+  (movie_payment_id, movie_reservation_id, idempotency_key, paid_amount, status, method,
+   paid_at, canceled_at, created_at, updated_at, created_by, updated_by)
 SELECT
   ROW_NUMBER() OVER (ORDER BY movie_reservation_id),
   movie_reservation_id,
+  CONCAT('PAY-', code),
   total_price,
-  'SUCCESS',
-  ELT(1 + (movie_reservation_id % 3), 'CARD', 'KAKAO_PAY', 'NAVER_PAY'),
+  'COMPLETE',
+  ELT(1 + (movie_reservation_id % 3), 'CARD', 'KAKAO', 'TOSS'),   -- PaymentMethod
+  @now, NULL,
   @now, @now, NULL, NULL
 FROM movie_reservation
 WHERE status = 'SUCCESS';
 
 
 -- =============================================================================
+-- 8-1. movie_reservation.movie_payment_id — SUCCESS 예매를 확정 결제로 연결
+--    예매 INSERT -> 결제 INSERT -> 예매 UPDATE 순서(순환 FK). 예매당 결제가 1행이라
+--    movie_reservation_id 조인만으로 1:1 이 성립한다(uk_movie_reservation_payment).
+-- =============================================================================
+UPDATE movie_reservation r
+JOIN movie_payment p ON p.movie_reservation_id = r.movie_reservation_id
+SET r.movie_payment_id = p.movie_payment_id
+WHERE r.status = 'SUCCESS';
+
+
+-- =============================================================================
 -- 9. coupon — 100행 (DefaultEntity). issued_quantity <= total_quantity
 -- =============================================================================
 INSERT INTO coupon
-  (coupon_id, name, total_quantity, issued_quantity, validity_day, start_at, end_at,
-   created_at, updated_at, created_by, updated_by, is_delete)
+  (coupon_id, name, usage_type, discount_type, total_quantity, issued_quantity, validity_day,
+   start_at, end_at, status, created_at, updated_at, created_by, updated_by, is_delete)
 WITH RECURSIVE seq(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM seq WHERE n < 100)
 SELECT
   n,
   CONCAT('테스트쿠폰 ', LPAD(n, 3, '0')),
+  ELT(1 + (n % 2), 'MOVIE', 'PRODUCT'),                                          -- CouponUsage
+  ELT(1 + (n % 4), 'PERCENT_10', 'PERCENT_50', 'MINUS_5000', 'MINUS_3000'),      -- DiscountType
   100 + (n % 10) * 50,                                       -- 100 ~ 550
   (n % 10) * 20,                                             -- 0 ~ 180 (<= total)
   CASE WHEN n % 3 = 0 THEN NULL ELSE 7 + (n % 4) * 7 END,    -- 일부 NULL, 7~28일
   @now - INTERVAL (n % 30) DAY,
   @now + INTERVAL (30 + (n % 30)) DAY,
+  'CAN_ISSUE',                                               -- CouponStatus (발급 기간 중, 잔여 수량 있음)
   @now, @now, NULL, NULL, 0
 FROM seq;
 
@@ -432,12 +488,11 @@ FROM seq;
 --       이전에는 ORDINAL 정수(USED=0, ISSUED=1, EXPIRED=2)였다.
 --     n 1..120 → USED 강제 (§6 에서 movie_reservation.coupon_issuance_id 로 연결, 최대 ~109)
 --     n 121..300 → 기존 분포: ISSUED 50% / USED 30% / EXPIRED 20%
---     is_delete: 엔티티에 isDelete 필드는 없지만 @SQLRestriction 이 raw SQL 로
---       이 컬럼을 참조하므로 반드시 채워야 한다.
+--     soft delete 없음 → is_delete 컬럼 없음.
 -- =============================================================================
 INSERT INTO coupon_issuance
   (coupon_issuance_id, member_id, coupon_id, status, expired_at, used_at,
-   created_at, updated_at, created_by, updated_by, is_delete)
+   created_at, updated_at, created_by, updated_by)
 WITH RECURSIVE seq(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM seq WHERE n < 300)
 SELECT
   n,
@@ -458,7 +513,7 @@ SELECT
     WHEN (n % 10) BETWEEN 5 AND 7       THEN @now - INTERVAL (n % 15) DAY          -- USED
     ELSE NULL
   END,
-  @now, @now, NULL, NULL, 0
+  @now, @now, NULL, NULL
 FROM seq;
 
 
@@ -515,144 +570,144 @@ VALUES
 --     ISSUANCE_STATUS: attr 에 과거 ORDINAL 값을 참고용으로 기록(현재 저장은 STRING)
 -- =============================================================================
 INSERT INTO common_code_detail
-  (common_code_group_id, common_code_detail_code, description, sort_order, attr,
+  (common_code_group_id, common_code_detail_code, display_name, description, sort_order, attr,
    created_at, updated_at, created_by, updated_by, is_delete)
 VALUES
   -- MEMBER_GRADE
-  ('MEMBER_GRADE', 'ROLE_COMMON',       '일반 회원',      1, NULL,       @now, @now, NULL, NULL, 0),
-  ('MEMBER_GRADE', 'ROLE_VIP',          'VIP 회원',       2, NULL,       @now, @now, NULL, NULL, 0),
-  ('MEMBER_GRADE', 'ROLE_MANAGE_ADMIN', '운영 관리자',    3, NULL,       @now, @now, NULL, NULL, 0),
-  ('MEMBER_GRADE', 'ROLE_SUPER_ADMIN',  '최고 관리자',    4, NULL,       @now, @now, NULL, NULL, 0),
-  ('MEMBER_GRADE', 'ROLE_RESERVED_1',   '예비 등급 1',    5, 'reserved', @now, @now, NULL, NULL, 0),
-  ('MEMBER_GRADE', 'ROLE_RESERVED_2',   '예비 등급 2',    6, 'reserved', @now, @now, NULL, NULL, 0),
-  ('MEMBER_GRADE', 'ROLE_RESERVED_3',   '예비 등급 3',    7, 'reserved', @now, @now, NULL, NULL, 0),
-  ('MEMBER_GRADE', 'ROLE_RESERVED_4',   '예비 등급 4',    8, 'reserved', @now, @now, NULL, NULL, 0),
+  ('MEMBER_GRADE', 'ROLE_COMMON',       '일반 회원', '일반 회원',      1, NULL,       @now, @now, NULL, NULL, 0),
+  ('MEMBER_GRADE', 'ROLE_VIP',          'VIP 회원', 'VIP 회원',       2, NULL,       @now, @now, NULL, NULL, 0),
+  ('MEMBER_GRADE', 'ROLE_MANAGE_ADMIN', '운영 관리자', '운영 관리자',    3, NULL,       @now, @now, NULL, NULL, 0),
+  ('MEMBER_GRADE', 'ROLE_SUPER_ADMIN',  '최고 관리자', '최고 관리자',    4, NULL,       @now, @now, NULL, NULL, 0),
+  ('MEMBER_GRADE', 'ROLE_RESERVED_1',   '예비 등급 1', '예비 등급 1',    5, 'reserved', @now, @now, NULL, NULL, 0),
+  ('MEMBER_GRADE', 'ROLE_RESERVED_2',   '예비 등급 2', '예비 등급 2',    6, 'reserved', @now, @now, NULL, NULL, 0),
+  ('MEMBER_GRADE', 'ROLE_RESERVED_3',   '예비 등급 3', '예비 등급 3',    7, 'reserved', @now, @now, NULL, NULL, 0),
+  ('MEMBER_GRADE', 'ROLE_RESERVED_4',   '예비 등급 4', '예비 등급 4',    8, 'reserved', @now, @now, NULL, NULL, 0),
   -- SOCIAL_PROVIDER
-  ('SOCIAL_PROVIDER', 'KAKAO',        '카카오',      1, NULL,       @now, @now, NULL, NULL, 0),
-  ('SOCIAL_PROVIDER', 'GOOGLE',       '구글',        2, NULL,       @now, @now, NULL, NULL, 0),
-  ('SOCIAL_PROVIDER', 'NORMAL',       '일반 가입',    3, NULL,       @now, @now, NULL, NULL, 0),
-  ('SOCIAL_PROVIDER', 'PROV_RSV_1',   '예비 제공자 1', 4, 'reserved', @now, @now, NULL, NULL, 0),
-  ('SOCIAL_PROVIDER', 'PROV_RSV_2',   '예비 제공자 2', 5, 'reserved', @now, @now, NULL, NULL, 0),
-  ('SOCIAL_PROVIDER', 'PROV_RSV_3',   '예비 제공자 3', 6, 'reserved', @now, @now, NULL, NULL, 0),
-  ('SOCIAL_PROVIDER', 'PROV_RSV_4',   '예비 제공자 4', 7, 'reserved', @now, @now, NULL, NULL, 0),
-  ('SOCIAL_PROVIDER', 'PROV_RSV_5',   '예비 제공자 5', 8, 'reserved', @now, @now, NULL, NULL, 0),
+  ('SOCIAL_PROVIDER', 'KAKAO',        '카카오', '카카오',      1, NULL,       @now, @now, NULL, NULL, 0),
+  ('SOCIAL_PROVIDER', 'GOOGLE',       '구글', '구글',        2, NULL,       @now, @now, NULL, NULL, 0),
+  ('SOCIAL_PROVIDER', 'NORMAL',       '일반 가입', '일반 가입',    3, NULL,       @now, @now, NULL, NULL, 0),
+  ('SOCIAL_PROVIDER', 'PROV_RSV_1',   '예비 제공자 1', '예비 제공자 1', 4, 'reserved', @now, @now, NULL, NULL, 0),
+  ('SOCIAL_PROVIDER', 'PROV_RSV_2',   '예비 제공자 2', '예비 제공자 2', 5, 'reserved', @now, @now, NULL, NULL, 0),
+  ('SOCIAL_PROVIDER', 'PROV_RSV_3',   '예비 제공자 3', '예비 제공자 3', 6, 'reserved', @now, @now, NULL, NULL, 0),
+  ('SOCIAL_PROVIDER', 'PROV_RSV_4',   '예비 제공자 4', '예비 제공자 4', 7, 'reserved', @now, @now, NULL, NULL, 0),
+  ('SOCIAL_PROVIDER', 'PROV_RSV_5',   '예비 제공자 5', '예비 제공자 5', 8, 'reserved', @now, @now, NULL, NULL, 0),
   -- MOVIE_CATEGORY
-  ('MOVIE_CATEGORY', 'ROMANCE',    '로맨스',       1, NULL,       @now, @now, NULL, NULL, 0),
-  ('MOVIE_CATEGORY', 'THRILLER',   '스릴러',       2, NULL,       @now, @now, NULL, NULL, 0),
-  ('MOVIE_CATEGORY', 'SF',         'SF',          3, NULL,       @now, @now, NULL, NULL, 0),
-  ('MOVIE_CATEGORY', 'CAT_RSV_1',  '예비 장르 1',  4, 'reserved', @now, @now, NULL, NULL, 0),
-  ('MOVIE_CATEGORY', 'CAT_RSV_2',  '예비 장르 2',  5, 'reserved', @now, @now, NULL, NULL, 0),
-  ('MOVIE_CATEGORY', 'CAT_RSV_3',  '예비 장르 3',  6, 'reserved', @now, @now, NULL, NULL, 0),
-  ('MOVIE_CATEGORY', 'CAT_RSV_4',  '예비 장르 4',  7, 'reserved', @now, @now, NULL, NULL, 0),
-  ('MOVIE_CATEGORY', 'CAT_RSV_5',  '예비 장르 5',  8, 'reserved', @now, @now, NULL, NULL, 0),
+  ('MOVIE_CATEGORY', 'ROMANCE',    '로맨스', '로맨스',       1, NULL,       @now, @now, NULL, NULL, 0),
+  ('MOVIE_CATEGORY', 'THRILLER',   '스릴러', '스릴러',       2, NULL,       @now, @now, NULL, NULL, 0),
+  ('MOVIE_CATEGORY', 'SF',         'SF', 'SF',          3, NULL,       @now, @now, NULL, NULL, 0),
+  ('MOVIE_CATEGORY', 'CAT_RSV_1',  '예비 장르 1', '예비 장르 1',  4, 'reserved', @now, @now, NULL, NULL, 0),
+  ('MOVIE_CATEGORY', 'CAT_RSV_2',  '예비 장르 2', '예비 장르 2',  5, 'reserved', @now, @now, NULL, NULL, 0),
+  ('MOVIE_CATEGORY', 'CAT_RSV_3',  '예비 장르 3', '예비 장르 3',  6, 'reserved', @now, @now, NULL, NULL, 0),
+  ('MOVIE_CATEGORY', 'CAT_RSV_4',  '예비 장르 4', '예비 장르 4',  7, 'reserved', @now, @now, NULL, NULL, 0),
+  ('MOVIE_CATEGORY', 'CAT_RSV_5',  '예비 장르 5', '예비 장르 5',  8, 'reserved', @now, @now, NULL, NULL, 0),
   -- SEAT_GRADE
-  ('SEAT_GRADE', 'NORMAL',      '일반석',       1, '0',        @now, @now, NULL, NULL, 0),
-  ('SEAT_GRADE', 'ADVANCED',    '프리미엄석',    2, '3000',     @now, @now, NULL, NULL, 0),
-  ('SEAT_GRADE', 'SEAT_RSV_1',  '예비 등급 1',   3, 'reserved', @now, @now, NULL, NULL, 0),
-  ('SEAT_GRADE', 'SEAT_RSV_2',  '예비 등급 2',   4, 'reserved', @now, @now, NULL, NULL, 0),
-  ('SEAT_GRADE', 'SEAT_RSV_3',  '예비 등급 3',   5, 'reserved', @now, @now, NULL, NULL, 0),
-  ('SEAT_GRADE', 'SEAT_RSV_4',  '예비 등급 4',   6, 'reserved', @now, @now, NULL, NULL, 0),
-  ('SEAT_GRADE', 'SEAT_RSV_5',  '예비 등급 5',   7, 'reserved', @now, @now, NULL, NULL, 0),
-  ('SEAT_GRADE', 'SEAT_RSV_6',  '예비 등급 6',   8, 'reserved', @now, @now, NULL, NULL, 0),
+  ('SEAT_GRADE', 'NORMAL',      '일반석', '일반석',       1, '0',        @now, @now, NULL, NULL, 0),
+  ('SEAT_GRADE', 'ADVANCED',    '프리미엄석', '프리미엄석',    2, '3000',     @now, @now, NULL, NULL, 0),
+  ('SEAT_GRADE', 'SEAT_RSV_1',  '예비 등급 1', '예비 등급 1',   3, 'reserved', @now, @now, NULL, NULL, 0),
+  ('SEAT_GRADE', 'SEAT_RSV_2',  '예비 등급 2', '예비 등급 2',   4, 'reserved', @now, @now, NULL, NULL, 0),
+  ('SEAT_GRADE', 'SEAT_RSV_3',  '예비 등급 3', '예비 등급 3',   5, 'reserved', @now, @now, NULL, NULL, 0),
+  ('SEAT_GRADE', 'SEAT_RSV_4',  '예비 등급 4', '예비 등급 4',   6, 'reserved', @now, @now, NULL, NULL, 0),
+  ('SEAT_GRADE', 'SEAT_RSV_5',  '예비 등급 5', '예비 등급 5',   7, 'reserved', @now, @now, NULL, NULL, 0),
+  ('SEAT_GRADE', 'SEAT_RSV_6',  '예비 등급 6', '예비 등급 6',   8, 'reserved', @now, @now, NULL, NULL, 0),
   -- SCREENING_STATUS
-  ('SCREENING_STATUS', 'PRE_SALE',   '예매 오픈 전',  1, NULL,       @now, @now, NULL, NULL, 0),
-  ('SCREENING_STATUS', 'ON_SALE',    '예매 중',       2, NULL,       @now, @now, NULL, NULL, 0),
-  ('SCREENING_STATUS', 'END_SALE',   '예매 종료',     3, NULL,       @now, @now, NULL, NULL, 0),
-  ('SCREENING_STATUS', 'SOLD_OUT',   '매진',          4, NULL,       @now, @now, NULL, NULL, 0),
-  ('SCREENING_STATUS', 'SCR_RSV_1',  '예비 상태 1',   5, 'reserved', @now, @now, NULL, NULL, 0),
-  ('SCREENING_STATUS', 'SCR_RSV_2',  '예비 상태 2',   6, 'reserved', @now, @now, NULL, NULL, 0),
-  ('SCREENING_STATUS', 'SCR_RSV_3',  '예비 상태 3',   7, 'reserved', @now, @now, NULL, NULL, 0),
-  ('SCREENING_STATUS', 'SCR_RSV_4',  '예비 상태 4',   8, 'reserved', @now, @now, NULL, NULL, 0),
+  ('SCREENING_STATUS', 'PRE_SALE',   '예매 오픈 전', '예매 오픈 전',  1, NULL,       @now, @now, NULL, NULL, 0),
+  ('SCREENING_STATUS', 'ON_SALE',    '예매 중', '예매 중',       2, NULL,       @now, @now, NULL, NULL, 0),
+  ('SCREENING_STATUS', 'END_SALE',   '예매 종료', '예매 종료',     3, NULL,       @now, @now, NULL, NULL, 0),
+  ('SCREENING_STATUS', 'SOLD_OUT',   '매진', '매진',          4, NULL,       @now, @now, NULL, NULL, 0),
+  ('SCREENING_STATUS', 'SCR_RSV_1',  '예비 상태 1', '예비 상태 1',   5, 'reserved', @now, @now, NULL, NULL, 0),
+  ('SCREENING_STATUS', 'SCR_RSV_2',  '예비 상태 2', '예비 상태 2',   6, 'reserved', @now, @now, NULL, NULL, 0),
+  ('SCREENING_STATUS', 'SCR_RSV_3',  '예비 상태 3', '예비 상태 3',   7, 'reserved', @now, @now, NULL, NULL, 0),
+  ('SCREENING_STATUS', 'SCR_RSV_4',  '예비 상태 4', '예비 상태 4',   8, 'reserved', @now, @now, NULL, NULL, 0),
   -- RESERVATION_STATUS
-  ('RESERVATION_STATUS', 'PENDING',    '결제 대기',    1, NULL,       @now, @now, NULL, NULL, 0),
-  ('RESERVATION_STATUS', 'SUCCESS',    '예매 완료',    2, NULL,       @now, @now, NULL, NULL, 0),
-  ('RESERVATION_STATUS', 'CANCELED',   '예매 취소',    3, NULL,       @now, @now, NULL, NULL, 0),
-  ('RESERVATION_STATUS', 'EXPIRED',    '홀드 만료',    4, NULL,       @now, @now, NULL, NULL, 0),
-  ('RESERVATION_STATUS', 'RES_RSV_1',  '예비 상태 1',  5, 'reserved', @now, @now, NULL, NULL, 0),
-  ('RESERVATION_STATUS', 'RES_RSV_2',  '예비 상태 2',  6, 'reserved', @now, @now, NULL, NULL, 0),
-  ('RESERVATION_STATUS', 'RES_RSV_3',  '예비 상태 3',  7, 'reserved', @now, @now, NULL, NULL, 0),
-  ('RESERVATION_STATUS', 'RES_RSV_4',  '예비 상태 4',  8, 'reserved', @now, @now, NULL, NULL, 0),
+  ('RESERVATION_STATUS', 'PENDING',    '결제 대기', '결제 대기',    1, NULL,       @now, @now, NULL, NULL, 0),
+  ('RESERVATION_STATUS', 'SUCCESS',    '예매 완료', '예매 완료',    2, NULL,       @now, @now, NULL, NULL, 0),
+  ('RESERVATION_STATUS', 'CANCELED',   '예매 취소', '예매 취소',    3, NULL,       @now, @now, NULL, NULL, 0),
+  ('RESERVATION_STATUS', 'EXPIRED',    '홀드 만료', '홀드 만료',    4, NULL,       @now, @now, NULL, NULL, 0),
+  ('RESERVATION_STATUS', 'RES_RSV_1',  '예비 상태 1', '예비 상태 1',  5, 'reserved', @now, @now, NULL, NULL, 0),
+  ('RESERVATION_STATUS', 'RES_RSV_2',  '예비 상태 2', '예비 상태 2',  6, 'reserved', @now, @now, NULL, NULL, 0),
+  ('RESERVATION_STATUS', 'RES_RSV_3',  '예비 상태 3', '예비 상태 3',  7, 'reserved', @now, @now, NULL, NULL, 0),
+  ('RESERVATION_STATUS', 'RES_RSV_4',  '예비 상태 4', '예비 상태 4',  8, 'reserved', @now, @now, NULL, NULL, 0),
   -- ISSUANCE_STATUS (attr 에 과거 ORDINAL 값 참고용)
-  ('ISSUANCE_STATUS', 'USED',       '사용 완료',    1, '0',        @now, @now, NULL, NULL, 0),
-  ('ISSUANCE_STATUS', 'ISSUED',     '발급됨',       2, '1',        @now, @now, NULL, NULL, 0),
-  ('ISSUANCE_STATUS', 'EXPIRED',    '만료됨',       3, '2',        @now, @now, NULL, NULL, 0),
-  ('ISSUANCE_STATUS', 'ISS_RSV_1',  '예비 상태 1',  4, 'reserved', @now, @now, NULL, NULL, 0),
-  ('ISSUANCE_STATUS', 'ISS_RSV_2',  '예비 상태 2',  5, 'reserved', @now, @now, NULL, NULL, 0),
-  ('ISSUANCE_STATUS', 'ISS_RSV_3',  '예비 상태 3',  6, 'reserved', @now, @now, NULL, NULL, 0),
-  ('ISSUANCE_STATUS', 'ISS_RSV_4',  '예비 상태 4',  7, 'reserved', @now, @now, NULL, NULL, 0),
-  ('ISSUANCE_STATUS', 'ISS_RSV_5',  '예비 상태 5',  8, 'reserved', @now, @now, NULL, NULL, 0),
+  ('ISSUANCE_STATUS', 'USED',       '사용 완료', '사용 완료',    1, '0',        @now, @now, NULL, NULL, 0),
+  ('ISSUANCE_STATUS', 'ISSUED',     '발급됨', '발급됨',       2, '1',        @now, @now, NULL, NULL, 0),
+  ('ISSUANCE_STATUS', 'EXPIRED',    '만료됨', '만료됨',       3, '2',        @now, @now, NULL, NULL, 0),
+  ('ISSUANCE_STATUS', 'ISS_RSV_1',  '예비 상태 1', '예비 상태 1',  4, 'reserved', @now, @now, NULL, NULL, 0),
+  ('ISSUANCE_STATUS', 'ISS_RSV_2',  '예비 상태 2', '예비 상태 2',  5, 'reserved', @now, @now, NULL, NULL, 0),
+  ('ISSUANCE_STATUS', 'ISS_RSV_3',  '예비 상태 3', '예비 상태 3',  6, 'reserved', @now, @now, NULL, NULL, 0),
+  ('ISSUANCE_STATUS', 'ISS_RSV_4',  '예비 상태 4', '예비 상태 4',  7, 'reserved', @now, @now, NULL, NULL, 0),
+  ('ISSUANCE_STATUS', 'ISS_RSV_5',  '예비 상태 5', '예비 상태 5',  8, 'reserved', @now, @now, NULL, NULL, 0),
   -- PAYMENT_METHOD
-  ('PAYMENT_METHOD', 'CARD',          '신용/체크카드',  1, NULL, @now, @now, NULL, NULL, 0),
-  ('PAYMENT_METHOD', 'KAKAO_PAY',     '카카오페이',     2, NULL, @now, @now, NULL, NULL, 0),
-  ('PAYMENT_METHOD', 'NAVER_PAY',     '네이버페이',     3, NULL, @now, @now, NULL, NULL, 0),
-  ('PAYMENT_METHOD', 'TOSS',          '토스',          4, NULL, @now, @now, NULL, NULL, 0),
-  ('PAYMENT_METHOD', 'BANK_TRANSFER', '계좌이체',       5, NULL, @now, @now, NULL, NULL, 0),
-  ('PAYMENT_METHOD', 'POINT',         '포인트',        6, NULL, @now, @now, NULL, NULL, 0),
-  ('PAYMENT_METHOD', 'GIFT_CARD',     '기프트카드',     7, NULL, @now, @now, NULL, NULL, 0),
-  ('PAYMENT_METHOD', 'MOBILE',        '휴대폰 결제',    8, NULL, @now, @now, NULL, NULL, 0),
+  ('PAYMENT_METHOD', 'CARD',          '신용/체크카드', '신용/체크카드',  1, NULL, @now, @now, NULL, NULL, 0),
+  ('PAYMENT_METHOD', 'KAKAO_PAY',     '카카오페이', '카카오페이',     2, NULL, @now, @now, NULL, NULL, 0),
+  ('PAYMENT_METHOD', 'NAVER_PAY',     '네이버페이', '네이버페이',     3, NULL, @now, @now, NULL, NULL, 0),
+  ('PAYMENT_METHOD', 'TOSS',          '토스', '토스',          4, NULL, @now, @now, NULL, NULL, 0),
+  ('PAYMENT_METHOD', 'BANK_TRANSFER', '계좌이체', '계좌이체',       5, NULL, @now, @now, NULL, NULL, 0),
+  ('PAYMENT_METHOD', 'POINT',         '포인트', '포인트',        6, NULL, @now, @now, NULL, NULL, 0),
+  ('PAYMENT_METHOD', 'GIFT_CARD',     '기프트카드', '기프트카드',     7, NULL, @now, @now, NULL, NULL, 0),
+  ('PAYMENT_METHOD', 'MOBILE',        '휴대폰 결제', '휴대폰 결제',    8, NULL, @now, @now, NULL, NULL, 0),
   -- PAYMENT_STATUS
-  ('PAYMENT_STATUS', 'READY',      '결제 준비',    1, NULL,       @now, @now, NULL, NULL, 0),
-  ('PAYMENT_STATUS', 'PAID',       '결제 완료',    2, NULL,       @now, @now, NULL, NULL, 0),
-  ('PAYMENT_STATUS', 'CANCELED',   '결제 취소',    3, NULL,       @now, @now, NULL, NULL, 0),
-  ('PAYMENT_STATUS', 'PARTIAL_REFUND', '부분 환불', 4, NULL,      @now, @now, NULL, NULL, 0),
-  ('PAYMENT_STATUS', 'FAILED',     '결제 실패',    5, NULL,       @now, @now, NULL, NULL, 0),
-  ('PAYMENT_STATUS', 'PAY_RSV_1',  '예비 상태 1',  6, 'reserved', @now, @now, NULL, NULL, 0),
-  ('PAYMENT_STATUS', 'PAY_RSV_2',  '예비 상태 2',  7, 'reserved', @now, @now, NULL, NULL, 0),
-  ('PAYMENT_STATUS', 'PAY_RSV_3',  '예비 상태 3',  8, 'reserved', @now, @now, NULL, NULL, 0),
+  ('PAYMENT_STATUS', 'READY',      '결제 준비', '결제 준비',    1, NULL,       @now, @now, NULL, NULL, 0),
+  ('PAYMENT_STATUS', 'PAID',       '결제 완료', '결제 완료',    2, NULL,       @now, @now, NULL, NULL, 0),
+  ('PAYMENT_STATUS', 'CANCELED',   '결제 취소', '결제 취소',    3, NULL,       @now, @now, NULL, NULL, 0),
+  ('PAYMENT_STATUS', 'PARTIAL_REFUND', '부분 환불', '부분 환불', 4, NULL,      @now, @now, NULL, NULL, 0),
+  ('PAYMENT_STATUS', 'FAILED',     '결제 실패', '결제 실패',    5, NULL,       @now, @now, NULL, NULL, 0),
+  ('PAYMENT_STATUS', 'PAY_RSV_1',  '예비 상태 1', '예비 상태 1',  6, 'reserved', @now, @now, NULL, NULL, 0),
+  ('PAYMENT_STATUS', 'PAY_RSV_2',  '예비 상태 2', '예비 상태 2',  7, 'reserved', @now, @now, NULL, NULL, 0),
+  ('PAYMENT_STATUS', 'PAY_RSV_3',  '예비 상태 3', '예비 상태 3',  8, 'reserved', @now, @now, NULL, NULL, 0),
   -- CANCEL_REASON
-  ('CANCEL_REASON', 'CHANGE_MIND',    '단순 변심',      1, NULL,       @now, @now, NULL, NULL, 0),
-  ('CANCEL_REASON', 'SCHEDULE',       '일정 변경',      2, NULL,       @now, @now, NULL, NULL, 0),
-  ('CANCEL_REASON', 'WRONG_BOOKING',  '잘못 예매',      3, NULL,       @now, @now, NULL, NULL, 0),
-  ('CANCEL_REASON', 'PAYMENT_ISSUE',  '결제 문제',      4, NULL,       @now, @now, NULL, NULL, 0),
-  ('CANCEL_REASON', 'SYSTEM',         '시스템 취소',    5, NULL,       @now, @now, NULL, NULL, 0),
-  ('CANCEL_REASON', 'HOLD_TIMEOUT',   '홀드 시간 초과',  6, NULL,       @now, @now, NULL, NULL, 0),
-  ('CANCEL_REASON', 'CANC_RSV_1',     '예비 사유 1',    7, 'reserved', @now, @now, NULL, NULL, 0),
-  ('CANCEL_REASON', 'CANC_RSV_2',     '예비 사유 2',    8, 'reserved', @now, @now, NULL, NULL, 0),
+  ('CANCEL_REASON', 'CHANGE_MIND',    '단순 변심', '단순 변심',      1, NULL,       @now, @now, NULL, NULL, 0),
+  ('CANCEL_REASON', 'SCHEDULE',       '일정 변경', '일정 변경',      2, NULL,       @now, @now, NULL, NULL, 0),
+  ('CANCEL_REASON', 'WRONG_BOOKING',  '잘못 예매', '잘못 예매',      3, NULL,       @now, @now, NULL, NULL, 0),
+  ('CANCEL_REASON', 'PAYMENT_ISSUE',  '결제 문제', '결제 문제',      4, NULL,       @now, @now, NULL, NULL, 0),
+  ('CANCEL_REASON', 'SYSTEM',         '시스템 취소', '시스템 취소',    5, NULL,       @now, @now, NULL, NULL, 0),
+  ('CANCEL_REASON', 'HOLD_TIMEOUT',   '홀드 시간 초과', '홀드 시간 초과',  6, NULL,       @now, @now, NULL, NULL, 0),
+  ('CANCEL_REASON', 'CANC_RSV_1',     '예비 사유 1', '예비 사유 1',    7, 'reserved', @now, @now, NULL, NULL, 0),
+  ('CANCEL_REASON', 'CANC_RSV_2',     '예비 사유 2', '예비 사유 2',    8, 'reserved', @now, @now, NULL, NULL, 0),
   -- THEATER_TYPE
-  ('THEATER_TYPE', 'TWO_D',       '2D 일반',        1, NULL,       @now, @now, NULL, NULL, 0),
-  ('THEATER_TYPE', 'THREE_D',     '3D',            2, NULL,       @now, @now, NULL, NULL, 0),
-  ('THEATER_TYPE', 'IMAX',        'IMAX',          3, NULL,       @now, @now, NULL, NULL, 0),
-  ('THEATER_TYPE', 'FOUR_DX',     '4DX',           4, NULL,       @now, @now, NULL, NULL, 0),
-  ('THEATER_TYPE', 'RECLINER',    '리클라이너',     5, NULL,       @now, @now, NULL, NULL, 0),
-  ('THEATER_TYPE', 'DOLBY',       '돌비 애트모스',   6, NULL,       @now, @now, NULL, NULL, 0),
-  ('THEATER_TYPE', 'PRIVATE',     '프라이빗',       7, NULL,       @now, @now, NULL, NULL, 0),
-  ('THEATER_TYPE', 'COUPLE',      '커플관',         8, NULL,       @now, @now, NULL, NULL, 0),
+  ('THEATER_TYPE', 'TWO_D',       '2D 일반', '2D 일반',        1, NULL,       @now, @now, NULL, NULL, 0),
+  ('THEATER_TYPE', 'THREE_D',     '3D', '3D',            2, NULL,       @now, @now, NULL, NULL, 0),
+  ('THEATER_TYPE', 'IMAX',        'IMAX', 'IMAX',          3, NULL,       @now, @now, NULL, NULL, 0),
+  ('THEATER_TYPE', 'FOUR_DX',     '4DX', '4DX',           4, NULL,       @now, @now, NULL, NULL, 0),
+  ('THEATER_TYPE', 'RECLINER',    '리클라이너', '리클라이너',     5, NULL,       @now, @now, NULL, NULL, 0),
+  ('THEATER_TYPE', 'DOLBY',       '돌비 애트모스', '돌비 애트모스',   6, NULL,       @now, @now, NULL, NULL, 0),
+  ('THEATER_TYPE', 'PRIVATE',     '프라이빗', '프라이빗',       7, NULL,       @now, @now, NULL, NULL, 0),
+  ('THEATER_TYPE', 'COUPLE',      '커플관', '커플관',         8, NULL,       @now, @now, NULL, NULL, 0),
   -- AGE_RATING
-  ('AGE_RATING', 'ALL',        '전체 관람가',     1, '0',        @now, @now, NULL, NULL, 0),
-  ('AGE_RATING', 'AGE_12',     '12세 이상 관람가', 2, '12',       @now, @now, NULL, NULL, 0),
-  ('AGE_RATING', 'AGE_15',     '15세 이상 관람가', 3, '15',       @now, @now, NULL, NULL, 0),
-  ('AGE_RATING', 'AGE_19',     '청소년 관람불가',  4, '19',       @now, @now, NULL, NULL, 0),
-  ('AGE_RATING', 'RESTRICTED', '제한상영가',      5, NULL,       @now, @now, NULL, NULL, 0),
-  ('AGE_RATING', 'AGE_RSV_1',  '예비 등급 1',     6, 'reserved', @now, @now, NULL, NULL, 0),
-  ('AGE_RATING', 'AGE_RSV_2',  '예비 등급 2',     7, 'reserved', @now, @now, NULL, NULL, 0),
-  ('AGE_RATING', 'AGE_RSV_3',  '예비 등급 3',     8, 'reserved', @now, @now, NULL, NULL, 0),
+  ('AGE_RATING', 'ALL',        '전체 관람가', '전체 관람가',     1, '0',        @now, @now, NULL, NULL, 0),
+  ('AGE_RATING', 'AGE_12',     '12세 이상 관람가', '12세 이상 관람가', 2, '12',       @now, @now, NULL, NULL, 0),
+  ('AGE_RATING', 'AGE_15',     '15세 이상 관람가', '15세 이상 관람가', 3, '15',       @now, @now, NULL, NULL, 0),
+  ('AGE_RATING', 'AGE_19',     '청소년 관람불가', '청소년 관람불가',  4, '19',       @now, @now, NULL, NULL, 0),
+  ('AGE_RATING', 'RESTRICTED', '제한상영가', '제한상영가',      5, NULL,       @now, @now, NULL, NULL, 0),
+  ('AGE_RATING', 'AGE_RSV_1',  '예비 등급 1', '예비 등급 1',     6, 'reserved', @now, @now, NULL, NULL, 0),
+  ('AGE_RATING', 'AGE_RSV_2',  '예비 등급 2', '예비 등급 2',     7, 'reserved', @now, @now, NULL, NULL, 0),
+  ('AGE_RATING', 'AGE_RSV_3',  '예비 등급 3', '예비 등급 3',     8, 'reserved', @now, @now, NULL, NULL, 0),
   -- MOVIE_GENRE_EXT
-  ('MOVIE_GENRE_EXT', 'ACTION',     '액션',        1, NULL, @now, @now, NULL, NULL, 0),
-  ('MOVIE_GENRE_EXT', 'COMEDY',     '코미디',      2, NULL, @now, @now, NULL, NULL, 0),
-  ('MOVIE_GENRE_EXT', 'DRAMA',      '드라마',      3, NULL, @now, @now, NULL, NULL, 0),
-  ('MOVIE_GENRE_EXT', 'HORROR',     '공포',        4, NULL, @now, @now, NULL, NULL, 0),
-  ('MOVIE_GENRE_EXT', 'ANIMATION',  '애니메이션',   5, NULL, @now, @now, NULL, NULL, 0),
-  ('MOVIE_GENRE_EXT', 'DOCUMENTARY', '다큐멘터리',  6, NULL, @now, @now, NULL, NULL, 0),
-  ('MOVIE_GENRE_EXT', 'FANTASY',    '판타지',      7, NULL, @now, @now, NULL, NULL, 0),
-  ('MOVIE_GENRE_EXT', 'MYSTERY',    '미스터리',     8, NULL, @now, @now, NULL, NULL, 0),
+  ('MOVIE_GENRE_EXT', 'ACTION',     '액션', '액션',        1, NULL, @now, @now, NULL, NULL, 0),
+  ('MOVIE_GENRE_EXT', 'COMEDY',     '코미디', '코미디',      2, NULL, @now, @now, NULL, NULL, 0),
+  ('MOVIE_GENRE_EXT', 'DRAMA',      '드라마', '드라마',      3, NULL, @now, @now, NULL, NULL, 0),
+  ('MOVIE_GENRE_EXT', 'HORROR',     '공포', '공포',        4, NULL, @now, @now, NULL, NULL, 0),
+  ('MOVIE_GENRE_EXT', 'ANIMATION',  '애니메이션', '애니메이션',   5, NULL, @now, @now, NULL, NULL, 0),
+  ('MOVIE_GENRE_EXT', 'DOCUMENTARY', '다큐멘터리', '다큐멘터리',  6, NULL, @now, @now, NULL, NULL, 0),
+  ('MOVIE_GENRE_EXT', 'FANTASY',    '판타지', '판타지',      7, NULL, @now, @now, NULL, NULL, 0),
+  ('MOVIE_GENRE_EXT', 'MYSTERY',    '미스터리', '미스터리',     8, NULL, @now, @now, NULL, NULL, 0),
   -- NOTIFICATION_TYPE
-  ('NOTIFICATION_TYPE', 'RESERVATION_DONE', '예매 완료 알림',  1, NULL, @now, @now, NULL, NULL, 0),
-  ('NOTIFICATION_TYPE', 'PAYMENT_DONE',     '결제 완료 알림',  2, NULL, @now, @now, NULL, NULL, 0),
-  ('NOTIFICATION_TYPE', 'CANCEL_DONE',      '취소 완료 알림',  3, NULL, @now, @now, NULL, NULL, 0),
-  ('NOTIFICATION_TYPE', 'SCREENING_SOON',   '상영 임박 알림',  4, NULL, @now, @now, NULL, NULL, 0),
-  ('NOTIFICATION_TYPE', 'COUPON_ISSUED',    '쿠폰 발급 알림',  5, NULL, @now, @now, NULL, NULL, 0),
-  ('NOTIFICATION_TYPE', 'COUPON_EXPIRING',  '쿠폰 만료 예정',  6, NULL, @now, @now, NULL, NULL, 0),
-  ('NOTIFICATION_TYPE', 'MARKETING',        '마케팅 알림',    7, NULL, @now, @now, NULL, NULL, 0),
-  ('NOTIFICATION_TYPE', 'NOTICE',           '공지 알림',      8, NULL, @now, @now, NULL, NULL, 0),
+  ('NOTIFICATION_TYPE', 'RESERVATION_DONE', '예매 완료 알림', '예매 완료 알림',  1, NULL, @now, @now, NULL, NULL, 0),
+  ('NOTIFICATION_TYPE', 'PAYMENT_DONE',     '결제 완료 알림', '결제 완료 알림',  2, NULL, @now, @now, NULL, NULL, 0),
+  ('NOTIFICATION_TYPE', 'CANCEL_DONE',      '취소 완료 알림', '취소 완료 알림',  3, NULL, @now, @now, NULL, NULL, 0),
+  ('NOTIFICATION_TYPE', 'SCREENING_SOON',   '상영 임박 알림', '상영 임박 알림',  4, NULL, @now, @now, NULL, NULL, 0),
+  ('NOTIFICATION_TYPE', 'COUPON_ISSUED',    '쿠폰 발급 알림', '쿠폰 발급 알림',  5, NULL, @now, @now, NULL, NULL, 0),
+  ('NOTIFICATION_TYPE', 'COUPON_EXPIRING',  '쿠폰 만료 예정', '쿠폰 만료 예정',  6, NULL, @now, @now, NULL, NULL, 0),
+  ('NOTIFICATION_TYPE', 'MARKETING',        '마케팅 알림', '마케팅 알림',    7, NULL, @now, @now, NULL, NULL, 0),
+  ('NOTIFICATION_TYPE', 'NOTICE',           '공지 알림', '공지 알림',      8, NULL, @now, @now, NULL, NULL, 0),
   -- DEVICE_TYPE
-  ('DEVICE_TYPE', 'WEB_PC',      'PC 웹',        1, NULL,       @now, @now, NULL, NULL, 0),
-  ('DEVICE_TYPE', 'WEB_MOBILE',  '모바일 웹',     2, NULL,       @now, @now, NULL, NULL, 0),
-  ('DEVICE_TYPE', 'APP_IOS',     'iOS 앱',       3, NULL,       @now, @now, NULL, NULL, 0),
-  ('DEVICE_TYPE', 'APP_ANDROID', 'Android 앱',   4, NULL,       @now, @now, NULL, NULL, 0),
-  ('DEVICE_TYPE', 'KIOSK',       '현장 키오스크',  5, NULL,       @now, @now, NULL, NULL, 0),
-  ('DEVICE_TYPE', 'DEV_RSV_1',   '예비 기기 1',   6, 'reserved', @now, @now, NULL, NULL, 0),
-  ('DEVICE_TYPE', 'DEV_RSV_2',   '예비 기기 2',   7, 'reserved', @now, @now, NULL, NULL, 0),
-  ('DEVICE_TYPE', 'DEV_RSV_3',   '예비 기기 3',   8, 'reserved', @now, @now, NULL, NULL, 0);
+  ('DEVICE_TYPE', 'WEB_PC',      'PC 웹', 'PC 웹',        1, NULL,       @now, @now, NULL, NULL, 0),
+  ('DEVICE_TYPE', 'WEB_MOBILE',  '모바일 웹', '모바일 웹',     2, NULL,       @now, @now, NULL, NULL, 0),
+  ('DEVICE_TYPE', 'APP_IOS',     'iOS 앱', 'iOS 앱',       3, NULL,       @now, @now, NULL, NULL, 0),
+  ('DEVICE_TYPE', 'APP_ANDROID', 'Android 앱', 'Android 앱',   4, NULL,       @now, @now, NULL, NULL, 0),
+  ('DEVICE_TYPE', 'KIOSK',       '현장 키오스크', '현장 키오스크',  5, NULL,       @now, @now, NULL, NULL, 0),
+  ('DEVICE_TYPE', 'DEV_RSV_1',   '예비 기기 1', '예비 기기 1',   6, 'reserved', @now, @now, NULL, NULL, 0),
+  ('DEVICE_TYPE', 'DEV_RSV_2',   '예비 기기 2', '예비 기기 2',   7, 'reserved', @now, @now, NULL, NULL, 0),
+  ('DEVICE_TYPE', 'DEV_RSV_3',   '예비 기기 3', '예비 기기 3',   8, 'reserved', @now, @now, NULL, NULL, 0);
 
 
 SET FOREIGN_KEY_CHECKS = 1;
@@ -662,12 +717,14 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- -----------------------------------------------------------------------------
 SELECT 'member'                 AS tbl, COUNT(*) AS cnt FROM member
 UNION ALL SELECT 'movie',                 COUNT(*) FROM movie
+UNION ALL SELECT 'cinema',                COUNT(*) FROM cinema
 UNION ALL SELECT 'theater',               COUNT(*) FROM theater
 UNION ALL SELECT 'theater_seat',          COUNT(*) FROM theater_seat
 UNION ALL SELECT 'screening',             COUNT(*) FROM screening
 UNION ALL SELECT 'movie_reservation',     COUNT(*) FROM movie_reservation
 UNION ALL SELECT 'movie_reservation_seat',COUNT(*) FROM movie_reservation_seat
 UNION ALL SELECT 'movie_payment',         COUNT(*) FROM movie_payment
+UNION ALL SELECT 'movie_payment_history', COUNT(*) FROM movie_payment_history
 UNION ALL SELECT 'coupon',                COUNT(*) FROM coupon
 UNION ALL SELECT 'coupon_issuance',       COUNT(*) FROM coupon_issuance
 UNION ALL SELECT 'file_master',           COUNT(*) FROM file_master
@@ -681,19 +738,27 @@ UNION ALL SELECT 'common_code_detail',    COUNT(*) FROM common_code_detail;
 SELECT
   (SELECT COUNT(*) FROM movie_reservation WHERE coupon_issuance_id IS NOT NULL) AS coupon_used_reservations,
   (SELECT COUNT(*) FROM movie_reservation WHERE status = 'SUCCESS')             AS success_reservations,
-  -- 연결된 coupon_issuance 가 전부 USED(0) 인지 (0 이어야 정상)
+  -- 연결된 coupon_issuance 가 전부 'USED' 인지 (0 이어야 정상)
+  -- status 는 STRING 저장이라 숫자 0 과 비교하면 항상 0건이 나와 검증이 무력화된다.
   (SELECT COUNT(*)
      FROM movie_reservation r JOIN coupon_issuance ci ON ci.coupon_issuance_id = r.coupon_issuance_id
-     WHERE r.coupon_issuance_id IS NOT NULL AND ci.status <> 0)                 AS coupon_not_used_violation,
+     WHERE r.coupon_issuance_id IS NOT NULL AND ci.status <> 'USED')            AS coupon_not_used_violation,
+  -- 확정 결제가 다른 예매의 결제를 가리키는 행 (0 이어야 정상)
+  (SELECT COUNT(*)
+     FROM movie_reservation r JOIN movie_payment p ON p.movie_payment_id = r.movie_payment_id
+     WHERE p.movie_reservation_id <> r.movie_reservation_id)                    AS payment_owner_mismatch,
+  -- SUCCESS 인데 확정 결제가 없거나, SUCCESS 가 아닌데 확정 결제가 있는 행 (0 이어야 정상)
+  (SELECT COUNT(*) FROM movie_reservation
+     WHERE (status = 'SUCCESS') <> (movie_payment_id IS NOT NULL))              AS payment_link_mismatch,
   -- total_price 가 8000 * (실제 좌석 수) 와 어긋나는 행 (0 이어야 정상)
   (SELECT COUNT(*) FROM movie_reservation r
      LEFT JOIN (SELECT movie_reservation_id, COUNT(*) AS actual_cnt
                 FROM movie_reservation_seat GROUP BY movie_reservation_id) a
        ON a.movie_reservation_id = r.movie_reservation_id
      WHERE r.total_price <> 8000 * COALESCE(a.actual_cnt, 0))                   AS total_price_mismatch,
-  -- theater_seat.price 가 grade 와 어긋나는 행 (0 이어야 정상)
-  (SELECT COUNT(*) FROM theater_seat
-     WHERE (grade = 'NORMAL' AND price <> 8000.00) OR (grade = 'ADVANCED' AND price <> 10000.00)) AS seat_price_mismatch;
+  -- screening.screen_type 이 ScreenType 키가 아닌 행 (0 이어야 정상)
+  (SELECT COUNT(*) FROM screening
+     WHERE screen_type NOT IN ('V_2D', 'V_4D', 'V_SCREENX'))                    AS screen_type_invalid;
 
 -- -----------------------------------------------------------------------------
 -- 검증: file_master 정합성 (polymorphic 참조라 물리적 FK 가 없어 애플리케이션 레벨로 확인)

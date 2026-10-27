@@ -11,8 +11,8 @@ import org.hibernate.annotations.SQLRestriction;
 import org.springframework.util.Assert;
 
 @Entity
-@SQLRestriction("is_delete = false")
-@SQLDelete(sql = "UPDATE theater SET is_delete = true WHERE theater_id = ?")
+@SQLRestriction("status != 'DELETE'")
+@SQLDelete(sql = "UPDATE theater SET status = 'DELETE' WHERE theater_id = ?")
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Getter
 public class Theater extends DefaultEntity {
@@ -20,6 +20,10 @@ public class Theater extends DefaultEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "theater_id")
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cinema_id")
+    private Cinema cinema;
 
     @Column(nullable = false, length = 100)
     private String name;
@@ -30,11 +34,13 @@ public class Theater extends DefaultEntity {
     @Column(nullable = false, length = 30)
     private TheaterStatus status;
 
-    public static Theater create(String name, String description) {
+    public static Theater create(Cinema cinema, String name, String description) {
+        Assert.notNull(cinema, "cinema can not be null");
         Assert.hasText(name, "name can not be null");
         Assert.hasText(description, "description can not be null");
 
         Theater theater = new Theater();
+        theater.cinema = cinema;
         theater.name = name;
         theater.description = description;
         theater.status = TheaterStatus.AVAILABLE;

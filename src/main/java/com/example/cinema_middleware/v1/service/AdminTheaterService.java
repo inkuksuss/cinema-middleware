@@ -3,6 +3,7 @@ package com.example.cinema_middleware.v1.service;
 import com.example.cinema_middleware.v1.domain.entity.Theater;
 import com.example.cinema_middleware.v1.repository.TheaterRepository;
 import com.example.cinema_middleware.v1.service.dto.*;
+import com.example.cinema_middleware.v1.service.factory.TheaterDtoFactory;
 import com.example.cinema_middleware.v1.support.exception.DuplicateValueException;
 import com.example.cinema_middleware.v1.support.exception.TargetNotFoundException;
 import com.example.cinema_middleware.v1.support.exception.TheaterInUseException;
@@ -23,22 +24,28 @@ public class AdminTheaterService {
     private final TheaterRepository theaterRepository;
     private final AdminSeatService seatService;
     private final AdminScreeningService screeningService;
+    private final AdminCinemaService cinemaService;
 
-    public Page<TheaterDto.Summary> getTheaterSummary(Pageable pageable) {
+    public Page<TheaterDto.Summary> getTheaterSummary(Pageable pageable, Long cinemaId) {
         Assert.notNull(pageable, "pageable can not be null");
 
-        return theaterRepository.findTheaterPage(pageable)
-                .map(t -> TheaterDto.Summary.from(t));
+        return theaterRepository.findPageInCinema(pageable, cinemaId)
+                .map(TheaterDtoFactory::summary);
     }
 
-    public void addTheater(String name, String description) {
-        Assert.hasText(name, "name can not be null");
-        Assert.hasText(description, "description can not be null");
+    public void addTheater(TheaterCommand.Create command) {
+        Assert.notNull(command, "command can not be null");
 
-        theaterRepository.findByName(name)
-                         .ifPresent(t -> { throw new DuplicateValueException("이미 존재하는 상영관 명입니다."); });
+        if (cinemaService.checkDuplicateName(command.cinemaId(), command.name())) {
+            throw new DuplicateValueException();
+        }
 
-        theaterRepository.save(Theater.create(name, description));
+        Theater newTheater = Theater.create(
+                cinemaService.getRefer(command.cinemaId()),
+                command.name(), command.description()
+        );
+
+        theaterRepository.save(newTheater);
     }
 
     @Transactional
@@ -57,23 +64,26 @@ public class AdminTheaterService {
     public void remove(Long theaterId) {
         Assert.notNull(theaterId, "theaterId can not be null");
 
-        if (screeningService.isUsing(theaterId)) throw new TheaterInUseException();
+        if (screeningService.checkHavingScreening(theaterId)) throw new TheaterInUseException();
 
         theaterRepository.deleteById(theaterId);
     }
 
-    public TheaterDto.SeatMap getAllAtTheater(Long theaterId) {
+    public TheaterDto.TheaterMap getAllAtTheater(Long theaterId) {
         Assert.notNull(theaterId, "theaterId can not be null");
 
-        List<TheaterDto.SeatSummary> seatList = seatService.getAllByTheaterId(theaterId);
+        List<SeatDto.Summary> seatList = seatService.getAllByTheaterId(theaterId);
 
-        return new TheaterDto.SeatMap(theaterId, seatList);
+        if (seatList.size() == 0) throw new TargetNotFoundException();
+
+        return new TheaterDto.TheaterMap(theaterId, seatList);
     }
 
     public void bulkAddSeat(TheaterCommand.BulkAddSeat command) {
         Assert.notNull(command, "bulkAddSeatCommand can not be null");
 
-        Theater theater = theaterRepository.getReferenceById(command.theaterId());
+        Theater theater = theaterRepository.findById(command.theaterId())
+                .orElseThrow(() -> { throw new TargetNotFoundException(); });
 
         seatService.saveAll(theater, command.seatList());
     }

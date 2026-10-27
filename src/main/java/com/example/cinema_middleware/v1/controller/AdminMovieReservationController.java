@@ -31,7 +31,11 @@ public class AdminMovieReservationController {
             @RequestParam(required = false) String code
     ) {
         Page<ReservationDto.AdminSummary> result = reservationService.getReservationSummary(
-                new ReservationCommand.AdminSearch(pageable, startDate, endDate, status, code));
+                new ReservationCommand.SearchAdminRow(
+                        pageable,
+                        startDate, endDate,
+                        status, code)
+        );
 
         return ResponseEntity
                 .ok()

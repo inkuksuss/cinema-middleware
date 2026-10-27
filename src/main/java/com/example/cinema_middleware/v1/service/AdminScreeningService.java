@@ -2,8 +2,10 @@ package com.example.cinema_middleware.v1.service;
 
 import com.example.cinema_middleware.v1.domain.entity.Screening;
 import com.example.cinema_middleware.v1.repository.ScreeningRepository;
+import com.example.cinema_middleware.v1.repository.dao.ScreeningDao;
 import com.example.cinema_middleware.v1.service.dto.ScreeningDto;
 import com.example.cinema_middleware.v1.service.dto.ScreeningCommand;
+import com.example.cinema_middleware.v1.service.factory.ScreeningDtoFactory;
 import com.example.cinema_middleware.v1.support.exception.ScreeningHaveReservationException;
 import com.example.cinema_middleware.v1.support.exception.TargetNotFoundException;
 import jakarta.annotation.Nullable;
@@ -25,35 +27,32 @@ public class AdminScreeningService {
     private final ScreeningRepository screeningRepository;
     private final AdminMovieReservationService reservationService;
 
-    public boolean isUsing(Long theaterId) {
+    public boolean checkHavingScreening(Long theaterId) {
         LocalDateTime now = LocalDateTime.now();
+
         return screeningRepository.existsAlreadyUsing(theaterId, now.toLocalDate(), now.toLocalTime());
     }
 
     public Page<ScreeningDto.AdminSummary> getSummary(
             Pageable pageable,
-            LocalDate targetDate,
-            @Nullable Long theaterId,
-            @Nullable Long movieId
+            LocalDate targetDate, @Nullable Long theaterId, @Nullable Long movieId
     ) {
         Assert.notNull(pageable, "pageable can not be null");
         Assert.notNull(targetDate, "targetDate can not be null");
 
         return screeningRepository.findAdminRow(
                 pageable,
-                targetDate,
-                theaterId,
-                movieId
-                ).map(ScreeningDto.AdminSummary::from);
+                targetDate, theaterId, movieId
+        ).map(ScreeningDtoFactory::adminSummary);
     }
 
     public ScreeningDto.AdminDetail getDetail(Long screeningId) {
         Assert.notNull(screeningId, "screeningId can not be null");
 
-        Screening screening = screeningRepository.findDetailById(screeningId)
+        ScreeningDao.AdminRowDetail detail = screeningRepository.findAdminDetail(screeningId)
                 .orElseThrow(() -> { throw new TargetNotFoundException(); });
 
-        return ScreeningDto.AdminDetail.from(screening);
+        return ScreeningDtoFactory.adminDetail(detail);
     }
 
     @Transactional
@@ -74,9 +73,7 @@ public class AdminScreeningService {
     }
 
     private void checkEditable(Long screeningId) {
-        Assert.notNull(screeningId, "screeningId can not be null");
-
-        if (reservationService.checkAliveReservation(screeningId)) {
+        if (reservationService.checkHavingAliveReservation(screeningId)) {
             throw new ScreeningHaveReservationException();
         }
     }

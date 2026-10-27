@@ -6,11 +6,13 @@
       "Read(./**/*.generated.*)"
     ]
   },
-  "enabledPlugins": {
-    "context7@claude-plugins-official": true
-  },
   "enabledMcpjsonServers": [
     "sequential-thinking",
     "shrimp-task-manager"
-  ]
+  ],
+  "enabledPlugins": {
+    "context7@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "redis-development@claude-plugins-official": true
+  }
 }

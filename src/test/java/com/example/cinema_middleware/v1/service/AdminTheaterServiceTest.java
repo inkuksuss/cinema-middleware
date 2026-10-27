@@ -2,7 +2,10 @@ package com.example.cinema_middleware.v1.service;
 
 import com.example.cinema_middleware.v1.domain.entity.Theater;
 import com.example.cinema_middleware.v1.domain.entity.enums.SeatGrade;
+import com.example.cinema_middleware.v1.domain.entity.enums.SeatStatus;
+import com.example.cinema_middleware.v1.repository.CinemaRepository;
 import com.example.cinema_middleware.v1.repository.TheaterRepository;
+import com.example.cinema_middleware.v1.service.dto.SeatCommand;
 import com.example.cinema_middleware.v1.service.dto.TheaterCommand;
 import jakarta.persistence.EntityManager;
 import org.assertj.core.api.Assertions;
@@ -11,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,17 +25,18 @@ class AdminTheaterServiceTest {
     @Autowired AdminSeatService seatService;
     @Autowired TheaterRepository theaterRepository;
     @Autowired
-    EntityManager em;
+    CinemaRepository cinemaRepository;
+
 
     @Test
     void bulkAddUpper() {
         //given
         final int size = 201;
-        Theater savedTheater = theaterRepository.save(Theater.create("test1", "1"));
+        Theater savedTheater = theaterRepository.save(Theater.create(cinemaRepository.getReferenceById(1L),"test1", "1"));
 
-        List<TheaterCommand.BulkAddSeat.Seat> list = new ArrayList<>();
+        List<SeatCommand.Create> list = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            list.add(new TheaterCommand.BulkAddSeat.Seat("A", Integer.valueOf(i).toString(), SeatGrade.NORMAL));
+            list.add(new SeatCommand.Create("A", "B", SeatGrade.NORMAL, BigDecimal.ONE, SeatStatus.AVAILABLE));
         }
 
         //when
@@ -46,11 +51,11 @@ class AdminTheaterServiceTest {
     void bulkAddEqual() {
         //given
         final int size = 200;
-        Theater savedTheater = theaterRepository.save(Theater.create("test1", "1"));
+        Theater savedTheater = theaterRepository.save(Theater.create(cinemaRepository.getReferenceById(1L),"test1", "1"));
 
-        List<TheaterCommand.BulkAddSeat.Seat> list = new ArrayList<>();
+        List<SeatCommand.Create> list = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            list.add(new TheaterCommand.BulkAddSeat.Seat("A", Integer.valueOf(i).toString(), SeatGrade.NORMAL));
+            list.add(new SeatCommand.Create("A", "B", SeatGrade.NORMAL, BigDecimal.ONE, SeatStatus.AVAILABLE));
         }
 
         //when
@@ -65,11 +70,11 @@ class AdminTheaterServiceTest {
     void bulkAddUnder() {
         //given
         final int size = 199;
-        Theater savedTheater = theaterRepository.save(Theater.create("test1", "1"));
+        Theater savedTheater = theaterRepository.save(Theater.create(cinemaRepository.getReferenceById(1L),"test1", "1"));
 
-        List<TheaterCommand.BulkAddSeat.Seat> list = new ArrayList<>();
+        List<SeatCommand.Create> list = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            list.add(new TheaterCommand.BulkAddSeat.Seat("A", Integer.valueOf(i).toString(), SeatGrade.NORMAL));
+            list.add(new SeatCommand.Create("A", "B", SeatGrade.NORMAL, BigDecimal.ONE, SeatStatus.AVAILABLE));
         }
 
         //when

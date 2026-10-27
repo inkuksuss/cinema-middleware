@@ -39,14 +39,14 @@ public class MovieReservationHistory extends HistoryEntity {
     private String seatNames;
 
     @Column(precision = 10, scale = 2, nullable = false)
-    private BigDecimal totalPrice;
+    private BigDecimal originalAmount;
 
     private LocalDateTime expiredAt;
 
     private LocalDateTime canceledAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 30)
     private ReservationStatus status;
 
     public static MovieReservationHistory create(MovieReservation reservation) {
@@ -63,9 +63,8 @@ public class MovieReservationHistory extends HistoryEntity {
         }
         history.code = reservation.getCode();
         history.seatNames = reservation.getSeatNames();
-        history.totalPrice = reservation.getTotalPrice();
+        history.originalAmount = reservation.getOriginalAmount();
         history.status = reservation.getStatus();
-        history.canceledAt = reservation.getCanceledAt();
         history.expiredAt = reservation.getExpiredAt();
 
         return history;

@@ -12,10 +12,4 @@ import java.util.Optional;
 
 public interface ScreeningRepository extends JpaRepository<Screening, Long>, ScreeningRepositoryQuery {
 
-
-    @Query("SELECT s FROM Screening s " +
-            "LEFT JOIN FETCH s.movie " +
-            "LEFT JOIN FETCH s.theater " +
-            "WHERE s.id = :screeningId")
-    Optional<Screening> findDetailById(@Param("screeningId") Long screeningId);
 }

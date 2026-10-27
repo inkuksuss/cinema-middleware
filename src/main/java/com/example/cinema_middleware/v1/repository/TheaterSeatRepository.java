@@ -7,7 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface TheaterSeatRepository extends JpaRepository<TheaterSeat, Long> {
+public interface TheaterSeatRepository extends JpaRepository<TheaterSeat, Long>, TheaterSeatRepositoryQuery {
 
     @Query("SELECT ts FROM TheaterSeat ts " +
             "JOIN FETCH ts.theater t " +

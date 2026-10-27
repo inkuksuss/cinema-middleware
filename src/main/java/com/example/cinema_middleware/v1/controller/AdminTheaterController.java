@@ -25,9 +25,10 @@ public class AdminTheaterController {
 
     @GetMapping("/")
     public ResponseEntity<Result<Page<TheaterDto.Summary>>> getTheaterSummary(
-            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 7) Pageable pageable
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 7) Pageable pageable,
+            @RequestParam Long cinemaId
     ) {
-        Page<TheaterDto.Summary> result = theaterService.getTheaterSummary(pageable);
+        Page<TheaterDto.Summary> result = theaterService.getTheaterSummary(pageable, cinemaId);
 
         return ResponseEntity
                 .ok()
@@ -37,7 +38,7 @@ public class AdminTheaterController {
     @PostMapping("/")
     public ResponseEntity<Result<Void>> createTheater(@RequestBody @Validated TheaterRequest.Create request
     ) {
-        theaterService.addTheater(request.name(), request.description());
+        theaterService.addTheater(request.toCommand());
 
         return ResponseEntity
                 .ok()
@@ -72,8 +73,8 @@ public class AdminTheaterController {
     }
 
     @GetMapping("/{theaterId}/seat")
-    public ResponseEntity<Result<TheaterDto.SeatMap>> getTheaterSeat(@PathVariable Long theaterId) {
-        TheaterDto.SeatMap result = theaterService.getAllAtTheater(theaterId);
+    public ResponseEntity<Result<TheaterDto.TheaterMap>> getTheaterSeat(@PathVariable Long theaterId) {
+        TheaterDto.TheaterMap result = theaterService.getAllAtTheater(theaterId);
 
         return ResponseEntity
                 .ok()

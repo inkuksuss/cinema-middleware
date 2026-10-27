@@ -23,12 +23,22 @@ public final class TheaterRequest {
     }
 
     public record Create(
+            @NotNull(message = "cinemaId은(는) 필수 입력 항목입니다.")
+            Long cinemaId,
+
             @NotBlank(message = "name은(는) 필수 입력 항목입니다.")
             String name,
 
             @NotBlank(message = "description은(는) 필수 입력 항목입니다.")
             String description
     ) {
+        public TheaterCommand.Create toCommand() {
+            return new TheaterCommand.Create(
+                    this.cinemaId,
+                    this.name,
+                    this.description
+            );
+        }
     }
 
     public record Modify(

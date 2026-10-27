@@ -10,8 +10,8 @@ import com.example.cinema_middleware.v1.support.exception.ReservationExpiredExce
 import com.example.cinema_middleware.v1.support.exception.ScreeningNotOnSaleException;
 import com.example.cinema_middleware.v1.support.exception.SeatAlreadyTakenException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -29,9 +29,9 @@ public class MovieReservationController {
     private final MovieReservationService movieReservationService;
 
     @PostMapping("/")
-    public ResponseEntity<Result<ReservationDto.Detail>> createReservation(@RequestBody @Validated ReservationRequest.Create request) {
+    public ResponseEntity<Result<Long>> createReservation(@RequestBody @Validated ReservationRequest.Create request) {
         try {
-            ReservationDto.Detail result =
+            Long result =
                     movieReservationService.addReservation(request.screeningId(), request.theaterSeatIdList());
 
             return ResponseEntity
@@ -92,12 +92,12 @@ public class MovieReservationController {
     }
 
     @GetMapping("/my")
-    public ResponseEntity<Result<Page<ReservationDto.Summary>>> getMyReservation(
+    public ResponseEntity<Result<Slice<ReservationDto.Summary>>> getMyReservation(
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 7) Pageable pageable,
             @RequestParam(required = false) ReservationStatus status
     ) {
-        Page<ReservationDto.Summary> result =
-                movieReservationService.getReservationPageAtMember(pageable, status);
+        Slice<ReservationDto.Summary> result =
+                movieReservationService.getMyReservations(pageable, status);
 
         return ResponseEntity
                     .ok()
@@ -108,8 +108,6 @@ public class MovieReservationController {
     public ResponseEntity<Result<ReservationDto.Detail>> getReservationDetail(
             @PathVariable Long reservationId
     ) {
-        if (reservationId == null) throw new IllegalArgumentException("예매 고유값이 옳바르지 않습니다.");
-
         ReservationDto.Detail result = movieReservationService.getReservationDetail(reservationId);
 
         return ResponseEntity

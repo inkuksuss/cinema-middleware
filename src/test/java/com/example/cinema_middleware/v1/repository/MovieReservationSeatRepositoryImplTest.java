@@ -10,7 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 class MovieReservationSeatRepositoryImplTest {
 
-    @Autowired MovieReservationSeatRepository repository;
+    @Autowired
+    ReservationSeatRepository repository;
 
     @Test
     void test() {

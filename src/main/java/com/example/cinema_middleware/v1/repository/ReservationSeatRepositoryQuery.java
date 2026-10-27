@@ -1,6 +1,6 @@
 package com.example.cinema_middleware.v1.repository;
 
-public interface MovieReservationSeatRepositoryQuery {
+public interface ReservationSeatRepositoryQuery {
 
     boolean existsReservedSeat(Long theaterSeatId);
 }
