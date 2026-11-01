@@ -44,18 +44,6 @@ class MovieReservationSeatServiceTest {
     @Autowired
     CinemaRepository cinemaRepository;
 
-    @AfterEach
-    void clear() {
-        movieReservationSeatRepository.deleteAll();
-        screeningRepository.deleteAll();
-        movieReservationRepository.deleteAll();
-        movieRepository.deleteAll();
-        theaterSeatRepository.deleteAll();
-        theaterRepository.deleteAll();
-        memberRepository.deleteAll();
-    }
-
-
     @Test
     @DisplayName("addReservationSeat: 중복 자리 선점 체크")
     void addReservationSeatCheckDuplicate() {
