@@ -58,7 +58,7 @@
 | `member` | 회원 | `TimeEntity` | - |
 | `movie` | 영화 | `DefaultEntity` | - |
 | `cinema` | 영화관(지점) | `DefaultEntity` | - |
-| `theater` | 상영관 | `DefaultEntity` | - |
+| `theater` | 상영관 | `DefaultEntity` | `cinema`(nullable) |
 | `theater_seat` | 상영관 좌석 | `DefaultEntity` | `theater` |
 | `screening` | 상영 회차 | `DefaultEntity` | `movie`, `theater` |
 | `movie_reservation` | 영화 예매 | `DefaultEntity` | `member`, `screening`, `coupon_issuance`(nullable), `movie_payment`(nullable, 확정 결제) |
@@ -89,7 +89,7 @@
 | `movie_reservation.status` | `ReservationStatus` | `PENDING`, `SUCCESS`, `EXPIRED`, `CANCELED` |
 | `movie_reservation_seat.status` | `ReservationSeatStatus` | `RESERVED`, `NULL`(취소/만료) |
 | `movie_payment.status` | `PaymentStatus` | `PENDING`, `COMPLETE`, `FAILED`, `CANCELED` |
-| `movie_payment.method` | `PaymentMethod` | `CARD`, `KAKAO`, `TOSS` (`movie_payment_history.method` 는 문자열 `VARCHAR(100)`) |
+| `movie_payment.method` | `PaymentMethod` | `CARD`, `KAKAO`, `TOSS` (`movie_payment_history.method` 도 동일) |
 | `coupon.status` | `CouponStatus` | `PRE_ISSUE`, `CAN_ISSUE`, `SOLD_OUT`, `DELETE` |
 | `coupon.usage_type` | `CouponUsage` | `MOVIE`, `PRODUCT` |
 | `coupon.discount_type` | `DiscountType` | `PERCENT_10`, `PERCENT_50`, `MINUS_5000`, `MINUS_3000` |
@@ -118,6 +118,8 @@ movie_reservation ─── movie_payment   (확정 결제, 1:1 · movie_reserva
 movie_reservation ··· movie_reservation_history   (스냅샷, FK 없음)
 movie_reservation ··· movie_payment_history       (스냅샷, FK 없음)
 
+cinema ──< theater   (nullable FK)
+
 common_code_group ──< common_code_detail
 ```
 
@@ -135,12 +137,15 @@ UNIQUE KEY uk_seat_hold (screening_id, theater_seat_id, status)
   그래서 `status` 는 NOT NULL 이 아니다.
 - `idx_mrs_screening` 은 `fk_mrs_screening` 전용 인덱스다. `uk_seat_hold` 선두 컬럼이 `screening_id` 라
   FK 가 그 인덱스에 의존하면 `uk_seat_hold` 를 교체할 때 드롭이 막히므로 별도로 둔다.
-- 좌석 가격 컬럼은 이 테이블에도, `theater_seat`에도 없다 (아래 참고).
+- 좌석 가격은 `theater_seat.price` 에 있다.
 
-### 좌석 가격 — 컬럼이 아닌 `SeatGrade`
+### `theater_seat.price` — 좌석 가격
 
-`theater_seat.price` 컬럼은 제거됐다. 가격은 `SeatGrade` enum 이 들고 있다(`NORMAL → 0`, `ADVANCED → 5000`).
-`movie_reservation.total_price` 는 예매 시점에 계산돼 그대로 저장되는 값이다.
+좌석별 가격. 테스트 데이터는 NORMAL 8000 / ADVANCED 10000.
+
+### `movie_reservation.original_amount` — 할인 전 금액
+
+예매 시점 좌석 가격 합계. 생성 후 그대로 저장된다.
 
 ### `usage_type` — 예약어 회피
 
@@ -153,7 +158,7 @@ DB 에는 `ScreenType` 의 키(`V_2D` 등)를 `VARCHAR(30)` 으로 저장하고,
 
 ### `movie_reservation.expired_at` — 홀드 만료
 
-**NOT NULL, `updatable = false`**. `MovieReservation.create()` 가 생성 시각 + 10분으로 정하고 이후 바뀌지 않는다
+**NOT NULL, `updatable = false`**. `MovieReservation.create()` 가 생성 시각 + 5분으로 정하고 이후 바뀌지 않는다
 (확정돼도 null 로 지우지 않는다). 예매에 `canceled_at` 컬럼은 없다.
 
 ### `movie_reservation.coupon_issuance` — 예매에 적용한 쿠폰
@@ -174,7 +179,7 @@ DB 에는 `ScreenType` 의 키(`V_2D` 등)를 `VARCHAR(30)` 으로 저장하고,
 | `MovieReservation.payment` (`@OneToOne`, nullable) | `movie_reservation.movie_payment_id` (UNIQUE) | 예매를 **확정한** 결제 |
 
 - 결제 시도 1회 = `movie_payment` 행 1개. 재시도는 새 멱등키로 새 행을 만든다. 부분 결제는 지원하지 않는다
-  (`completePayment`가 `paid_amount = total_price` 를 검증).
+  (`completePayment`가 `paid_amount = original_amount` 를 검증).
 - 예매 조회 시 `mr.payment` 하나만 fetch join 하면 되고, 유효 결제를 골라내는 필터링이 없다.
   결제 시도 목록은 예매에 컬렉션으로 두지 않는다.
 - 생성 순서: 예매 INSERT → 결제 INSERT → 예매 UPDATE(`movie_payment_id`). 예매 쪽 FK 가 nullable 이라 순환 FK 가 풀린다.

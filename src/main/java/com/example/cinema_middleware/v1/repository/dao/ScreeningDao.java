@@ -28,10 +28,10 @@ public final class ScreeningDao {
             String theaterName,
 
             Long cinemaId,
-            Long cinemaName,
+            String cinemaName,
 
-            Integer totalSeatCount,
-            Integer reservedSeatCount
+            Long totalSeatCount,
+            Long reservedSeatCount
     ) {
     }
 

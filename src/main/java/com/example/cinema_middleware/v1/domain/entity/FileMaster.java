@@ -33,7 +33,7 @@ public class FileMaster extends DefaultEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private FileUsage usage;
+    private FileUsage usageType;
 
     private String originalName;
 
@@ -51,20 +51,20 @@ public class FileMaster extends DefaultEntity {
     public static FileMaster create(
             Long targetId,
             TableType targetType,
-            FileUsage usage,
+            FileUsage usageType,
             String destination,
             MultipartFile file
     ) {
         Assert.notNull(targetId, "targetId can not be null");
         Assert.notNull(targetType, "targetType can not be null");
-        Assert.notNull(usage, "usage can not be null");
+        Assert.notNull(usageType, "usageType can not be null");
         Assert.notNull(file, "file can not be null");
         Assert.hasText(destination, "destination can not be null");
 
         FileMaster fileMaster = new FileMaster();
         fileMaster.targetId = targetId;
         fileMaster.targetType = targetType;
-        fileMaster.usage = usage;
+        fileMaster.usageType = usageType;
         fileMaster.originalName = file.getOriginalFilename();
         fileMaster.size = file.getSize();
         fileMaster.contentType = file.getContentType();

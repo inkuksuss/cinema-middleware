@@ -31,7 +31,8 @@ public class MoviePaymentHistory extends HistoryEntity {
     @Column(precision = 10, scale = 2, nullable = false, updatable = false)
     private BigDecimal paidAmount;
 
-    @Column(nullable = false, length = 100)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
     private PaymentMethod method;
 
     @Enumerated(EnumType.STRING)

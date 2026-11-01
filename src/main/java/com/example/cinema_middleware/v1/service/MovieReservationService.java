@@ -15,6 +15,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -33,6 +34,9 @@ public class MovieReservationService {
 
     @Transactional
     public Long addReservation(Long screeningId, List<Long> seatIdList) {
+        Assert.notNull(screeningId, "screeningId can not be null");
+        Assert.notEmpty(seatIdList, "seatIdList can not be empty");
+
         Member memberRef = authService.getMemberRefer();
         Screening screeningRef = screeningService.getReferById(screeningId);
 

@@ -137,10 +137,12 @@ CREATE TABLE IF NOT EXISTS cinema
 --   soft delete: status='DELETE' (is_delete 컬럼 없음)
 --     @SQLRestriction("status != 'DELETE'")
 --     @SQLDelete(... SET status = 'DELETE' ...)
+--   FK: cinema_id -> cinema (nullable)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS theater
 (
     theater_id  BIGINT       NOT NULL AUTO_INCREMENT COMMENT '상영관 PK',
+    cinema_id   BIGINT       NULL COMMENT '영화관 FK',
     name        VARCHAR(100) NOT NULL COMMENT '상영관 이름',
     description VARCHAR(255) NULL COMMENT '상영관 설명',
     status      VARCHAR(30)  NOT NULL COMMENT '상영관 상태(TheaterStatus: AVAILABLE/UNAVAILABLE/DELETE). DELETE 가 soft delete',
@@ -148,7 +150,9 @@ CREATE TABLE IF NOT EXISTS theater
     updated_at  DATETIME(6)  NULL COMMENT '수정 일시',
     created_by  BIGINT       NULL COMMENT '생성자',
     updated_by  BIGINT       NULL COMMENT '수정자',
-    PRIMARY KEY (theater_id)
+    PRIMARY KEY (theater_id),
+    KEY idx_theater_cinema (cinema_id),
+    CONSTRAINT fk_theater_cinema FOREIGN KEY (cinema_id) REFERENCES cinema (cinema_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci COMMENT = '상영관';
@@ -161,7 +165,7 @@ CREATE TABLE IF NOT EXISTS theater
 --     @SQLRestriction("status != 'DELETE'")
 --     @SQLDelete(... SET status = 'DELETE' ...)
 --   FK: theater_id -> theater
---   좌석 가격은 컬럼이 아니라 SeatGrade enum 의 price 값이다 (price 컬럼 없음).
+--   price: 좌석별 가격 (NORMAL 8000 / ADVANCED 10000)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS theater_seat
 (
@@ -170,6 +174,7 @@ CREATE TABLE IF NOT EXISTS theater_seat
     seat_row        VARCHAR(100)   NOT NULL COMMENT '좌석 행(예: A, B)',
     seat_column     VARCHAR(100)   NOT NULL COMMENT '좌석 열(예: 1, 2)',
     grade           VARCHAR(30)    NOT NULL COMMENT '좌석 등급(SeatGrade: NORMAL/ADVANCED)',
+    price           DECIMAL(10, 2) NOT NULL COMMENT '좌석 가격',
     status          VARCHAR(30)    NOT NULL COMMENT '좌석 상태(SeatStatus: AVAILABLE/UNAVAILABLE/DELETE). DELETE 가 soft delete',
     created_at      DATETIME(6)    NULL COMMENT '생성 일시',
     updated_at      DATETIME(6)    NULL COMMENT '수정 일시',
@@ -238,9 +243,9 @@ CREATE TABLE IF NOT EXISTS movie_reservation
     movie_payment_id     BIGINT         NULL COMMENT '확정 결제 FK (nullable, UNIQUE)',
     code                 VARCHAR(255)   NOT NULL COMMENT '예매 번호(고유 코드)',
     seat_names           VARCHAR(255)   NOT NULL COMMENT '예매 좌석명 목록(seat_row+seat_column, 쉼표 구분. 예: A1, B2, C3)',
-    total_price          DECIMAL(10, 2) NOT NULL COMMENT '총 결제 금액',
+    original_amount      DECIMAL(10, 2) NOT NULL COMMENT '할인 전 예매 금액',
     status               VARCHAR(30)    NOT NULL COMMENT '예매 상태(ReservationStatus: EXPIRED/SUCCESS/PENDING/CANCELED)',
-    expired_at           DATETIME(6)    NOT NULL COMMENT '예매 홀드 만료 일시(생성 시 +10분, 이후 변경 불가)',
+    expired_at           DATETIME(6)    NOT NULL COMMENT '예매 홀드 만료 일시(생성 시 +5분, 이후 변경 불가)',
     version              BIGINT         NOT NULL DEFAULT 0 COMMENT '낙관적 락 버전',
     created_at           DATETIME(6)    NULL COMMENT '생성 일시',
     updated_at           DATETIME(6)    NULL COMMENT '수정 일시',
@@ -351,7 +356,7 @@ CREATE TABLE IF NOT EXISTS movie_reservation_history
     coupon_issuance_id           BIGINT         NULL COMMENT '사용 쿠폰 발급 ID(스냅샷, FK 없음)',
     code                         VARCHAR(255)   NOT NULL COMMENT '예매 번호(스냅샷)',
     seat_names                   VARCHAR(255)   NOT NULL COMMENT '예매 좌석명 목록(스냅샷)',
-    total_price                  DECIMAL(10, 2) NOT NULL COMMENT '총 결제 금액(스냅샷)',
+    original_amount              DECIMAL(10, 2) NOT NULL COMMENT '할인 전 예매 금액(스냅샷)',
     expired_at                   DATETIME(6)    NULL COMMENT '예매 만료 일시(스냅샷)',
     canceled_at                  DATETIME(6)    NULL COMMENT '예매 취소 일시(스냅샷)',
     status                       VARCHAR(30)    NOT NULL COMMENT '예매 상태(ReservationStatus)',
@@ -384,7 +389,7 @@ CREATE TABLE IF NOT EXISTS movie_payment_history
     movie_reservation_id     BIGINT         NULL COMMENT '예매 ID(스냅샷, FK 없음)',
     idempotency_key          VARCHAR(64)    NOT NULL COMMENT '결제 시도 멱등키(스냅샷)',
     paid_amount              DECIMAL(10, 2) NOT NULL COMMENT '결제 금액(스냅샷)',
-    method                   VARCHAR(100)   NOT NULL COMMENT '결제 수단(스냅샷)',
+    method                   VARCHAR(30)    NOT NULL COMMENT '결제 수단(PaymentMethod, 스냅샷)',
     status                   VARCHAR(30)    NOT NULL COMMENT '결제 상태(PaymentStatus)',
     change_type              VARCHAR(30)    NOT NULL COMMENT '변경 종류(HistoryType)',
     change_reason            VARCHAR(255)   NULL COMMENT '변경 사유',

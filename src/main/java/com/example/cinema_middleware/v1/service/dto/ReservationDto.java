@@ -39,7 +39,7 @@ public final class ReservationDto {
             LocalDate screeningStartDate,
             LocalTime screeningStartAt,
             ScreeningStatus screeningStatus,
-            ScreenType screenType,
+            String screenType,
 
             Long cinemaId,
             String cinemaName
@@ -64,7 +64,7 @@ public final class ReservationDto {
             LocalDate screeningStartDate,
             LocalTime screeningStartAt,
             ScreeningStatus screeningStatus,
-            ScreenType screenType,
+            String screenType,
 
             Long cinemaId,
             String cinemaName,
@@ -125,7 +125,7 @@ public final class ReservationDto {
             LocalDate screeningStartDate,
             LocalTime screeningStartAt,
             ScreeningStatus screeningStatus,
-            ScreenType screenType,
+            String screenType,
 
             Long cinemaId,
             String cinemaName,

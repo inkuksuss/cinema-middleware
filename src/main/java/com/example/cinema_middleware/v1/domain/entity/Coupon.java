@@ -29,7 +29,7 @@ public class Coupon extends DefaultEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private CouponUsage usage;
+    private CouponUsage usageType;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)

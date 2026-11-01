@@ -46,7 +46,6 @@ public class AdminMovieReservationService {
         return ReservationDtoFactory.adminDetail(detail);
     }
 
-    // TODO: 예매 취소 구현 필요
     public void cancel(Long reservationId) {
         throw new UnsupportedOperationException("미구현");
     }

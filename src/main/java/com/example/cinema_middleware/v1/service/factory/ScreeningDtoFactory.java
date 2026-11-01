@@ -31,7 +31,7 @@ public final class ScreeningDtoFactory {
         return new ScreeningDto.Summary(
                 preview.id(),
                 LocalDateTime.of(preview.startDate(), preview.startAt()),
-                preview.type(),
+                preview.type().getDisplayName(),
                 preview.status(),
 
                 preview.movieId(),
@@ -59,7 +59,7 @@ public final class ScreeningDtoFactory {
                 row.startDate(),
                 row.startAt(),
                 row.status(),
-                row.screenType(),
+                row.screenType().getDisplayName(),
 
                 row.movieId(),
                 row.movieTitle(),
@@ -82,7 +82,7 @@ public final class ScreeningDtoFactory {
                 detail.startDate(),
                 detail.startAt(),
                 detail.status(),
-                detail.screenType(),
+                detail.screenType().getDisplayName(),
                 detail.createdAt(),
                 detail.updatedAt(),
                 detail.createdBy(),

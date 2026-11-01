@@ -8,12 +8,13 @@ import com.example.cinema_middleware.v1.security.MemberPrincipal;
 import com.example.cinema_middleware.v1.security.AuthorizationConst;
 import com.example.cinema_middleware.v1.security.jwt.JwtTokenProvider;
 import com.example.cinema_middleware.v1.service.dto.AuthDto;
+import com.example.cinema_middleware.v1.support.exception.AuthenticationFailedException;
 import com.example.cinema_middleware.v1.support.exception.InvalidAccessTokenException;
 import com.example.cinema_middleware.v1.support.exception.InvalidRefreshTokenException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
@@ -46,16 +47,16 @@ public class AuthService {
 
         Long memberId = jwtTokenProvider.getMemberId(refreshToken);
         String savedToken = authTokenRepository.findRefreshTokenByMemberId(memberId)
-                .orElseThrow(() -> new InvalidRefreshTokenException());
+                .orElseThrow(InvalidRefreshTokenException::new);
 
         // Redis에 저장된 refreshToken과 요청으로 들어온 값이 정확히 같아야 통과
         // (로그아웃했거나, 이미 한 번 재발급에 사용된 토큰이면 저장값과 달라짐 - 재사용 방지)
-        if (savedToken == null || !savedToken.equals(refreshToken)) {
+        if (!savedToken.equals(refreshToken)) {
             throw new InvalidRefreshTokenException();
         }
 
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new InvalidRefreshTokenException());
+                .orElseThrow(InvalidRefreshTokenException::new);
 
         return this.issueTokens(
                 member.getId(),
@@ -86,26 +87,27 @@ public class AuthService {
         }
 
         return memberRepository.findById(memberId)
-                .orElseThrow(() -> { throw new InvalidAccessTokenException(); });
-    }
-
-    public Member getMember() {
-        MemberPrincipal principal = (MemberPrincipal) getContext().getAuthentication().getPrincipal();
-
-        Member member = memberRepository.findById(principal.getId())
-                .orElseThrow(() -> { throw new InvalidAccessTokenException(); });
-
-        if (MemberGrade.ROLE_COMMON != member.getGrade() || MemberGrade.ROLE_VIP != member.getGrade()) {
-            throw new AuthorizationDeniedException("잘못된 접근입니다.");
-        }
-
-        return member;
+                .orElseThrow(InvalidAccessTokenException::new);
     }
 
     public Long getMemberId() {
-        MemberPrincipal principal = (MemberPrincipal) getContext().getAuthentication().getPrincipal();
+        try {
+            return (Long) getContext().getAuthentication().getPrincipal();
+        }
+        catch (Exception e) {
+            throw new AuthenticationFailedException();
+        }
+    }
 
-        return principal.getId();
+    public Member getMember() {
+        Member member = memberRepository.findById(this.getMemberId())
+                .orElseThrow(InvalidAccessTokenException::new);
+
+        if (MemberGrade.ROLE_COMMON != member.getGrade() && MemberGrade.ROLE_VIP != member.getGrade()) {
+            throw new AccessDeniedException("Access Denied");
+        }
+
+        return member;
     }
 
     public Member getMemberRefer() {

@@ -99,6 +99,8 @@ public final class ReservationDao {
             BigDecimal originalAmount,
             String seatNames,
             ReservationStatus status,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt,
 
             Long memberId,
             String memberName,

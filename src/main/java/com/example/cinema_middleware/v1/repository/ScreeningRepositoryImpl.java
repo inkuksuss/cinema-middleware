@@ -1,8 +1,10 @@
 package com.example.cinema_middleware.v1.repository;
 
+import com.example.cinema_middleware.v1.domain.entity.QMovieReservationSeat;
 import com.example.cinema_middleware.v1.domain.entity.Screening;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationSeatStatus;
 import com.example.cinema_middleware.v1.domain.entity.enums.ScreeningStatus;
+import com.example.cinema_middleware.v1.domain.entity.enums.SeatStatus;
 import com.example.cinema_middleware.v1.repository.dao.*;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -33,23 +35,6 @@ public class ScreeningRepositoryImpl implements ScreeningRepositoryQuery {
         this.queryFactory = new JPAQueryFactory(em);
     }
 
-    @Override
-    public List<Screening> findScreeningAtTargetDate(LocalDate targetDate, Long cinemaId, @Nullable Long movieId) {
-        return queryFactory
-                .select(screening)
-                .from(screening)
-                .join(screening.movie, movie).fetchJoin()
-                .join(screening.theater, theater).fetchJoin()
-                .join(theater.cinema, cinema).fetchJoin()
-                .where(
-                        screening.startDate.eq(targetDate),
-                        screening.status.eq(ScreeningStatus.ON_SALE),
-                        cinema.id.eq(cinemaId),
-                        movieIdEq(movieId)
-                )
-                .orderBy(screening.startAt.asc())
-                .fetch();
-    }
 
     @Override
     public List<ScreeningDao.Preview> findPreviewAtTargetDate(LocalDate targetDate, Long cinemaId, @Nullable Long movieId) {
@@ -81,11 +66,15 @@ public class ScreeningRepositoryImpl implements ScreeningRepositoryQuery {
                 .join(screening.theater, theater)
                 .join(theater.cinema, cinema)
                 .join(screening.movie, movie)
-                .join(theaterSeat.theater, theater)
-                .leftJoin(theaterSeat.movieReservationSeatList)
+                .join(theaterSeat)
                 .on(
-                        theaterSeat.id.eq(movieReservationSeat.theaterSeat.id),
-                        movieReservationSeat.status.eq(ReservationSeatStatus.RESERVED)
+                        theaterSeat.theater.id.eq(theater.id),
+                        theaterSeat.status.eq(SeatStatus.AVAILABLE)
+                )
+                .leftJoin(movieReservationSeat)
+                .on(
+                    theaterSeat.id.eq(movieReservationSeat.theaterSeat.id),
+                    movieReservationSeat.status.eq(ReservationSeatStatus.RESERVED)
                 )
                 .where(
                         screening.startDate.eq(targetDate),

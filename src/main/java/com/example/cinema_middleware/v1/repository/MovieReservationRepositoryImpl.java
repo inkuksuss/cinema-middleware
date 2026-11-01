@@ -144,7 +144,7 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
                                 movieReservation.seatNames,
                                 movieReservation.status,
 
-                                member.id,
+                                movieReservation.member.id,
 
                                 movie.id,
                                 movie.title,
@@ -161,7 +161,7 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
                                 cinema.id,
                                 cinema.name,
 
-                                couponIssuance.id,
+                                movieReservation.couponIssuance.id,
 
                                 moviePayment.paidAmount,
                                 moviePayment.method,
@@ -251,6 +251,8 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
                         ReservationDao.AdminRowDetail.class,
                         movieReservation.id,
                         movieReservation.code,
+                        movieReservation.originalAmount,
+                        movieReservation.seatNames,
                         movieReservation.status,
                         movieReservation.createdAt,
                         movieReservation.updatedAt,

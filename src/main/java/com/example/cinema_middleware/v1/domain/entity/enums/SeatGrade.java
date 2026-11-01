@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 public enum SeatGrade {
 
-    NORMAL(0), ADVANCED(5000);
+    NORMAL(8000), ADVANCED(10000);
 
     private final Integer price;
 

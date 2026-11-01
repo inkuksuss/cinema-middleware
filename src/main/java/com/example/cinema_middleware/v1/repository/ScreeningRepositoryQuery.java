@@ -13,8 +13,6 @@ import java.util.Optional;
 
 public interface ScreeningRepositoryQuery {
 
-    List<Screening> findScreeningAtTargetDate(LocalDate targetDate, Long cinemaId, @Nullable Long movieId);
-
     List<ScreeningDao.Preview> findPreviewAtTargetDate(LocalDate targetDate, Long cinemaId, @Nullable Long movieId);
 
     Page<ScreeningDao.AdminRow> findAdminRow(Pageable pageable, LocalDate targetDate, @Nullable Long theaterId, @Nullable Long movieId);

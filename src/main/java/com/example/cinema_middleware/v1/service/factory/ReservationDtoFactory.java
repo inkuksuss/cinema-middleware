@@ -32,7 +32,7 @@ public final class ReservationDtoFactory {
                 reservation.screeningStartDate(),
                 reservation.screeningStartAt(),
                 reservation.screeningStatus(),
-                reservation.screenType(),
+                reservation.screenType().getDisplayName(),
 
                 reservation.cinemaId(),
                 reservation.cinemaName()
@@ -60,7 +60,7 @@ public final class ReservationDtoFactory {
                 reservation.screeningStartDate(),
                 reservation.screeningStartAt(),
                 reservation.screeningStatus(),
-                reservation.screenType(),
+                reservation.screenType().getDisplayName(),
 
                 reservation.cinemaId(),
                 reservation.cinemaName(),
@@ -125,7 +125,7 @@ public final class ReservationDtoFactory {
                 detail.screeningStartDate(),
                 detail.screeningStartAt(),
                 detail.screeningStatus(),
-                detail.screenType(),
+                detail.screenType().getDisplayName(),
 
                 detail.cinemaId(),
                 detail.cinemaName(),

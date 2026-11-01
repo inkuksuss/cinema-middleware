@@ -20,7 +20,7 @@ public final class ScreeningDto {
     public record Summary(
             Long id,
             LocalDateTime startAt,
-            ScreenType type,
+            String type,
             ScreeningStatus status,
 
             Long movieId,
@@ -33,10 +33,10 @@ public final class ScreeningDto {
             String theaterName,
 
             Long cinemaId,
-            Long cinemaName,
+            String cinemaName,
 
-            Integer totalSeatCount,
-            Integer availableSeatCount
+            Long totalSeatCount,
+            Long availableSeatCount
     ) {
     }
 
@@ -45,7 +45,7 @@ public final class ScreeningDto {
             Long id,
             LocalDate startDate,
             LocalTime startAt,
-            ScreenType type,
+            String type,
             ScreeningStatus status,
 
             Long movieId,
@@ -68,7 +68,7 @@ public final class ScreeningDto {
             LocalDate startDate,
             LocalTime startAt,
             ScreeningStatus status,
-            ScreenType type,
+            String type,
 
             Long movieId,
             String movieTitle,
@@ -89,7 +89,7 @@ public final class ScreeningDto {
             LocalDate startDate,
             LocalTime startAt,
             ScreeningStatus status,
-            ScreenType screenType,
+            String screenType,
             LocalDateTime createdAt,
             LocalDateTime updatedAt,
             Long createdBy,

@@ -11,6 +11,6 @@ import java.util.List;
 public interface ReservationSeatRepository extends JpaRepository<MovieReservationSeat, Long>, ReservationSeatRepositoryQuery {
 
     @Modifying
-    @Query("UPDATE MovieReservationSeat ms SET ms.reservation_id = :reservationId WHERE ms.id IN targetIdList")
+    @Query("UPDATE MovieReservationSeat ms SET ms.reservation.id = :reservationId WHERE ms.id IN :targetIdList")
     int putReservationAll(@Param("targetIdList") List<Long> targetIdList, @Param("reservationId") Long reservationId);
 }
