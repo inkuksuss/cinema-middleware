@@ -43,8 +43,6 @@ public class MovieReservationHistory extends HistoryEntity {
 
     private LocalDateTime expiredAt;
 
-    private LocalDateTime canceledAt;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private ReservationStatus status;
