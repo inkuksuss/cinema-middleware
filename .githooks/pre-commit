@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# 커밋 직전에 스테이징된 변경에서 시크릿 유출을 차단한다.
+# 활성화(클론마다 1회): git config core.hooksPath .githooks
+exec bash "$(git rev-parse --show-toplevel)/scripts/check-secrets.sh"
