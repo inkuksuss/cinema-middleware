@@ -3,11 +3,13 @@ package com.example.cinema_middleware.v1.service;
 import com.example.cinema_middleware.v1.domain.entity.MovieReservationSeat;
 import com.example.cinema_middleware.v1.domain.entity.Screening;
 import com.example.cinema_middleware.v1.domain.entity.enums.ScreeningStatus;
+import com.example.cinema_middleware.v1.domain.entity.enums.SeatStatus;
 import com.example.cinema_middleware.v1.repository.ReservationSeatRepository;
 import com.example.cinema_middleware.v1.repository.TheaterSeatRepository;
 import com.example.cinema_middleware.v1.repository.dao.SeatDao;
 import com.example.cinema_middleware.v1.support.exception.ScreeningNotOnSaleException;
 import com.example.cinema_middleware.v1.support.exception.SeatAlreadyTakenException;
+import com.example.cinema_middleware.v1.support.exception.SeatNotOnSaleException;
 import com.example.cinema_middleware.v1.support.exception.TargetNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -39,6 +41,11 @@ public class SeatService {
 
         if (!ScreeningStatus.ON_SALE.equals(isAvailableSeat.getFirst().screeningStatus())) {
             throw new ScreeningNotOnSaleException();
+        }
+
+        // 판매 중지 좌석은 uk_seat_hold 유니크 키로 막을 수 없어 여기서 거른다
+        if (isAvailableSeat.stream().anyMatch(seat -> SeatStatus.AVAILABLE != seat.seatStatus())) {
+            throw new SeatNotOnSaleException("판매 중인 좌석이 아닙니다.");
         }
 
         return isAvailableSeat;

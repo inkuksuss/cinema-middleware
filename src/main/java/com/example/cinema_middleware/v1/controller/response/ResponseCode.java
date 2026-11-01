@@ -27,6 +27,7 @@ public enum ResponseCode {
     SEAT_IN_USE(22),
     DUPLICATE_SEAT(23),
     DUPLICATE_VALUE(24),
+    SEAT_NOT_ON_SALE(25),
     EXCEPTION(99);
 
     private final int code;

@@ -9,6 +9,7 @@ import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
 import com.example.cinema_middleware.v1.support.exception.ReservationExpiredException;
 import com.example.cinema_middleware.v1.support.exception.ScreeningNotOnSaleException;
 import com.example.cinema_middleware.v1.support.exception.SeatAlreadyTakenException;
+import com.example.cinema_middleware.v1.support.exception.SeatNotOnSaleException;
 import com.example.cinema_middleware.v1.support.exception.TargetNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -53,6 +54,11 @@ public class MovieReservationController {
             return ResponseEntity
                     .ok()
                     .body(Result.of(ResponseCode.SCREENING_NOT_ON_SALE.getCode(), "현재 예매가 불가합니다.", null));
+        }
+        catch (SeatNotOnSaleException e) {
+            return ResponseEntity
+                    .ok()
+                    .body(Result.of(ResponseCode.SEAT_NOT_ON_SALE.getCode(), "판매 중인 좌석이 아닙니다.", null));
         }
         catch (SeatAlreadyTakenException e) {
             return ResponseEntity
