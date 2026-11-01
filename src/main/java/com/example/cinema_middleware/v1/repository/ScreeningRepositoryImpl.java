@@ -59,8 +59,8 @@ public class ScreeningRepositoryImpl implements ScreeningRepositoryQuery {
                         cinema.id,
                         cinema.name,
 
-                        theaterSeat.count(),
-                        movieReservationSeat.count()
+                        theaterSeat.id.countDistinct(),
+                        movieReservationSeat.id.countDistinct()
                 ))
                 .from(screening)
                 .join(screening.theater, theater)
@@ -74,6 +74,7 @@ public class ScreeningRepositoryImpl implements ScreeningRepositoryQuery {
                 .leftJoin(movieReservationSeat)
                 .on(
                     theaterSeat.id.eq(movieReservationSeat.theaterSeat.id),
+                    movieReservationSeat.screening.id.eq(screening.id),   // 같은 회차의 예매만
                     movieReservationSeat.status.eq(ReservationSeatStatus.RESERVED)
                 )
                 .where(

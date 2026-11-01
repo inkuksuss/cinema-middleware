@@ -60,6 +60,7 @@ public class TheaterSeatRepositoryImpl implements TheaterSeatRepositoryQuery {
                         theaterSeat.seatColumn,
                         theaterSeat.grade,
                         theaterSeat.price,
+                        theaterSeat.status,
 
                         movieReservationSeat.id,
                         movieReservationSeat.status
@@ -69,9 +70,10 @@ public class TheaterSeatRepositoryImpl implements TheaterSeatRepositoryQuery {
                 .join(theaterSeat)
                 .on(theater.id.eq(theaterSeat.theater.id))
                 .leftJoin(movieReservationSeat)
-                .on(theaterSeat.id.eq(
-                                movieReservationSeat.theaterSeat.id),
-                        (movieReservationSeat.status.eq(ReservationSeatStatus.RESERVED))
+                .on(
+                        theaterSeat.id.eq(movieReservationSeat.theaterSeat.id),
+                        movieReservationSeat.screening.id.eq(screening.id),
+                        movieReservationSeat.status.eq(ReservationSeatStatus.RESERVED)
                 )
                 .where(screening.id.eq(screeningId))
                 .fetch();
@@ -90,6 +92,7 @@ public class TheaterSeatRepositoryImpl implements TheaterSeatRepositoryQuery {
                         theaterSeat.seatColumn,
                         theaterSeat.grade,
                         theaterSeat.price,
+                        theaterSeat.status,
 
                         movieReservationSeat.id,
                         movieReservationSeat.status
@@ -101,7 +104,8 @@ public class TheaterSeatRepositoryImpl implements TheaterSeatRepositoryQuery {
                 .leftJoin(movieReservationSeat)
                 .on(
                         theaterSeat.id.eq(movieReservationSeat.theaterSeat.id),
-                        (movieReservationSeat.status.eq(ReservationSeatStatus.RESERVED))
+                        movieReservationSeat.screening.id.eq(screening.id),   // 같은 회차의 예매만
+                        movieReservationSeat.status.eq(ReservationSeatStatus.RESERVED)
                 )
                 .where(
                         screening.id.eq(screeningId),
