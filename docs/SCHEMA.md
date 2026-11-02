@@ -21,7 +21,7 @@
 | 항목 | 내용 |
 | --- | --- |
 | 네이밍 | Spring Boot 기본 전략(CamelCase → `snake_case`) |
-| PK | `{테이블}_id`, 대부분 `BIGINT AUTO_INCREMENT` (예외: `file_master.file_id`, `log_master.log_id`, 공통 코드는 문자열 PK) |
+| PK | `{테이블}_id`, 대부분 `BIGINT AUTO_INCREMENT` (예외: `movie_reservation` 은 UUID v7 `BINARY(16)`, `file_master.file_id`, `log_master.log_id`, 공통 코드는 문자열 PK) |
 | 연관관계 | `@ManyToOne(fetch = LAZY)` → FK 컬럼 + 인덱스. 예외: `movie_reservation.movie_payment_id`(`@OneToOne`, UNIQUE) |
 | Enum | `@Enumerated(STRING)` → `VARCHAR(30)` |
 | 금액 | `DECIMAL(10, 2)` |
@@ -149,8 +149,9 @@ UNIQUE KEY uk_seat_hold (screening_id, theater_seat_id, status)
 
 ### `usage_type` — 예약어 회피
 
-`usage` 는 MySQL 예약어다. 엔티티 필드명이 `usage` 인 `coupon`, `file_master` 는 컬럼명을 `usage_type` 으로 둔다.
-Hibernate 는 식별자를 인용하지 않으므로 엔티티에서 `@Column(name = "usage_type")` 으로 명시해야 한다.
+`usage` 는 MySQL 예약어다. 그래서 `coupon`, `file_master` 의 용도 컬럼은 엔티티 필드명을 `usageType` 으로 두어
+기본 네이밍 전략으로 `usage_type` 컬럼에 매핑된다(`@Column(name = ...)` 지정 없음).
+Hibernate 는 식별자를 인용하지 않으므로 컬럼명이 `usage` 가 되지 않게 유지한다.
 
 ### `screening.screen_type` — 키 저장, 표시명 변환
 
@@ -169,6 +170,16 @@ DB 에는 `ScreenType` 의 키(`V_2D` 등)를 `VARCHAR(30)` 으로 저장하고,
 `coupon_issuance` 테이블이 `schema.sql`에서 `movie_reservation`보다 뒤에 정의되지만,
 파일 상단 `SET FOREIGN_KEY_CHECKS = 0` 덕에 순서와 무관하게 FK가 생성된다.
 
+### `movie_reservation` — UUID v7 PK
+
+- `movie_reservation_id` 는 `BINARY(16)` 에 저장하는 UUID v7 이다. Hibernate `@UuidGenerator(style = VERSION_7)` 가
+  persist 시점에 생성하므로 **INSERT 전에 ID 가 확정**된다.
+- 그래서 예매 생성은 "예매 persist(ID 확정) → 예매에 연결된 좌석 저장 → flush" 한 번으로 끝난다
+  (flush 때 예매 → 좌석 순서로 INSERT, 좌석 충돌은 `uk_seat_hold` 로 감지).
+- 앞 48비트가 밀리초 타임스탬프라 시간순으로 정렬되어 클러스터드 인덱스에 순차 삽입된다.
+- 외부 노출용 예매 번호를 겸한다(별도 `code` 컬럼 없음). SQL 로 볼 때는 `BIN_TO_UUID(movie_reservation_id)`.
+- 이 PK 를 참조하는 컬럼(`movie_reservation_seat`, `movie_payment`, 두 이력 테이블의 `movie_reservation_id`)도 모두 `BINARY(16)` 이다.
+
 ### `movie_reservation` ↔ `movie_payment` — 결제 시도(1:N)와 확정 결제(1:1)
 
 서로 다른 FK 컬럼을 쓰는 **독립된 단방향 연관관계 두 개**다(`mappedBy` 없음, 순환 FK).
@@ -186,6 +197,7 @@ DB 에는 `ScreenType` 의 키(`V_2D` 등)를 `VARCHAR(30)` 으로 저장하고,
 - 결제 완료·취소 시각은 `movie_payment.paid_at` / `canceled_at` 에 둔다.
 - **멱등성**
   - 같은 시도의 중복 요청: `movie_payment.idempotency_key` UNIQUE (PG orderId).
+    예매 1 : 시도 N 이라 `movie_reservation_id` 로는 대체할 수 없다(재시도 행이 같은 예매 ID 를 가진다).
   - 이미 결제된 예매에 새 시도: `MovieReservation.startPayment` 가 `payment != null` 또는 `status != PENDING` 이면 거부.
   - 서로 다른 시도의 동시 승인: `movie_reservation.version`(`@Version`) 낙관적 락 + `movie_payment_id` UNIQUE.
     진 쪽은 롤백되지만 PG 승인은 이미 났으므로 **PG 취소 보상이 필요**하다.
@@ -195,10 +207,10 @@ DB 에는 `ScreenType` 의 키(`V_2D` 등)를 `VARCHAR(30)` 으로 저장하고,
 ### `movie_reservation_history` / `movie_payment_history` — 스냅샷 이력
 
 - 변경 시점의 값을 복사해 남기는 append-only 테이블이다(`HistoryEntity` 상속, `updated_*` 없음).
-- 원본 생명주기와 독립적이어야 하므로 연관관계 없이 참조 ID 를 값(`BIGINT`)으로만 보관하고
+- 원본 생명주기와 독립적이어야 하므로 연관관계 없이 참조 ID 를 값으로만 보관하고(예매 ID 는 `BINARY(16)`)
   물리 FK 는 두지 않는다(조회용 인덱스만). 두 테이블 모두 예매 참조 컬럼명은 `movie_reservation_id` 다.
 - `movie_payment_history.idempotency_key` 는 시도 하나에 이력이 여러 행 쌓이므로 UNIQUE 가 아닌 일반 인덱스다.
-- `movie_reservation_history.canceled_at` 은 컬럼이 남아 있지만 원본(예매)에 값이 없어 현재 항상 `NULL` 이다.
+- `movie_reservation_history` 에는 `canceled_at` 컬럼이 없다(원본 예매에도 없다). 취소 시각은 `movie_payment.canceled_at` 에 둔다.
 
 ### `common_code_detail` — 복합 PK
 

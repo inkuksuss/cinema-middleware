@@ -47,7 +47,11 @@
 | `ObjectNotFoundException` | 400 | `NOT_FOUND` |
 | `FileSaveFailedException` | 400 | `INVALID_FILE` |
 | 검증·파라미터 오류, `IllegalArgumentException` | 400 | `INVALID_ARGUMENT` |
+| `ConstraintViolationException`, `DataIntegrityViolationException` | 409 | `TRANSACTION_FAILED` |
+| 풀 대기·쿼리·트랜잭션·Redis 시간 초과, DB·Redis 연결 실패, 잠금 대기 초과(`CannotCreateTransactionException`, `QueryTimeoutException`, `TransactionTimedOutException`, `DataAccessResourceFailureException`, `PessimisticLockingFailureException`) | 503 | `SERVICE_UNAVAILABLE` |
 | 그 외 `Exception` | 500 | `EXCEPTION` |
+
+- `JwtAuthenticationFilter` 는 MVC 밖이라 Advice 가 적용되지 않는다. Redis 블랙리스트 조회 실패 시 필터가 직접 503 + `SERVICE_UNAVAILABLE` 을 쓴다.
 
 ## 파일
 

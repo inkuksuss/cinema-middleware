@@ -47,6 +47,24 @@ bash scripts/load-test-data.sh        # 테스트 데이터 적재 → test-data
   쿼리·경로 파라미터는 `WebConfig` 에 등록한 `StringToEnumConverterFactory`(빈 문자열 → null).
 - `spring-boot-starter-kafka` 의존성은 있지만 코드에서 쓰는 곳은 없다.
 
+### 타임아웃 (`application.yaml`, prod 상속)
+원칙은 "혼잡·장애 시 오래 붙잡지 말고 빨리 실패 안내"다. 시간 초과는 HTTP 503 + `SERVICE_UNAVAILABLE`(28)로 응답한다.
+
+| 항목 | 값 | 기본값 | 이유 |
+| --- | --- | --- | --- |
+| `server.tomcat.connection-timeout` | 20s | 60s | 연결 후 요청 데이터가 안 오는 클라이언트를 일찍 끊는다 |
+| `server.tomcat.keep-alive-timeout` | 65s | connection-timeout 과 같음 | 앞단 ALB idle(기본 60s)보다 길어야 502 를 막는다. **ALB idle 을 바꾸면 이 값도 그보다 길게** |
+| `spring.datasource.hikari.connection-timeout` | 3000ms | 30s | 풀 대기. 초과 시 503 |
+| `hikari.data-source-properties.connectTimeout` | 1000ms | 무제한 | DB TCP 연결(같은 네트워크) |
+| `hikari.data-source-properties.socketTimeout` | 30000ms | 무제한 | 끝나지 않는 쿼리 방지. 30초 넘는 작업이 생기면 재검토 |
+| `hikari.data-source-properties.sessionVariables` | `innodb_lock_wait_timeout=5` | 50s | 이 앱 연결에만 행 잠금 대기 5초 |
+| `spring.data.redis.connect-timeout` / `timeout` | 1s / 1s | 10s / 60s | 매 인증 요청이 블랙리스트를 조회하므로 짧게 |
+| `MovieReservationService.addReservation` | `@Transactional(timeout = 5)` | 없음 | 좌석 경쟁 경로 |
+
+- 드라이버 옵션을 URL 이 아니라 `data-source-properties` 에 둔 이유: 운영 URL 은 `SPRING_DATASOURCE_URL` 환경변수가 덮어쓴다.
+- Redis 블랙리스트 조회 실패 시 `JwtAuthenticationFilter` 가 요청을 막는다(fail-closed, 503 + 28). 토큰 없는 요청은 영향 없음.
+- 좌석 INSERT 중 잠금 대기 초과·교착·시간 초과는 `SeatService.putIfNotTaken` 이 `SeatAlreadyTakenException`(13)으로 바꾼다.
+
 ## 시크릿 유출 방지
 
 - **문서·코드·커밋 메시지에 비밀번호·키 값을 쓰지 않는다.** 파일 경로와 키 이름만 적는다.

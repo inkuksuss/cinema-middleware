@@ -26,6 +26,7 @@
 ## 매핑 규약 (현재 코드)
 
 - PK 컬럼 `{테이블}_id`, `@GeneratedValue(IDENTITY)`. `CommonCodeDetail` 만 `@EmbeddedId`(`key/CommonCodeDetailId`).
+  예외로 `MovieReservation` 은 `UUID` PK(`@UuidGenerator(style = VERSION_7)`, `BINARY(16)`)이며 예매 번호를 겸한다.
 - 연관관계는 `@ManyToOne(LAZY)` 가 기본. `MovieReservation.payment` 만 `@OneToOne(LAZY)`.
   역방향 `@OneToMany(mappedBy)` 는 `CommonCodeGroup`, `MovieReservation`, `TheaterSeat` 에 있다.
 - enum 은 전부 `@Enumerated(STRING)`. `ScreenType` 은 키(`V_2D` 등)를 저장하고 응답에는 `displayName` 을 쓴다.
@@ -41,8 +42,8 @@
 - 회원: `Member` — `MemberGrade`(ROLE_COMMON/VIP/MANAGE_ADMIN/SUPER_ADMIN), `MemberStatus`, `SocialProvider`.
 - 상영: `Cinema` → `Theater` → `TheaterSeat`(`SeatGrade`, `price`, `SeatStatus`).
   `Movie` + `Theater` → `Screening`(`ScreenType`, `startDate`, `startAt`, `ScreeningStatus`).
-- 예매: `MovieReservation`(member, screening, couponIssuance, payment, `code`, `seatNames`, `originalAmount`,
-  `ReservationStatus`, `expiredAt`) → `MovieReservationSeat`(screening, theaterSeat, `status`).
+- 예매: `MovieReservation`(member, screening, couponIssuance, payment, `seatNames`, `originalAmount`,
+  `ReservationStatus`, `expiredAt`) → `MovieReservationSeat`(reservation, screening, theaterSeat, `status`). 좌석은 생성 시 예매에 연결한다.
   - `movie_reservation_seat.status` 는 `RESERVED` 또는 NULL(해제)이며, 유니크 키
     `(screening_id, theater_seat_id, status)` 로 같은 회차 좌석의 중복 점유를 막는다.
   - `seatNames` 는 `", "` 로 이어 붙인 좌석명이다(`getSeatCount()` 가 이 구분자로 센다).
