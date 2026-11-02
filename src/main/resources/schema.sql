@@ -222,6 +222,9 @@ CREATE TABLE IF NOT EXISTS screening
 -- -----------------------------------------------------------------------------
 -- movie_reservation : 영화 예매
 --   base: DefaultEntity
+--   PK: UUID v7 (BINARY(16)). 애플리케이션(Hibernate @UuidGenerator VERSION_7)이 persist 시점에 생성한다.
+--     앞 48비트가 밀리초 타임스탬프라 시간순으로 정렬되어 클러스터드 인덱스에 순차 삽입된다.
+--     외부 노출용 예매 번호를 겸한다(별도 code 컬럼 없음). 조회 시 BIN_TO_UUID(movie_reservation_id).
 --   soft delete 없음 (물리 삭제)
 --   FK: member_id -> member, screening_id -> screening,
 --       coupon_issuance_id -> coupon_issuance (nullable, 예매당 최대 1개 쿠폰)
@@ -236,12 +239,11 @@ CREATE TABLE IF NOT EXISTS screening
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS movie_reservation
 (
-    movie_reservation_id BIGINT         NOT NULL AUTO_INCREMENT COMMENT '예매 PK',
+    movie_reservation_id BINARY(16)     NOT NULL COMMENT '예매 PK (UUID v7)',
     member_id            BIGINT         NULL COMMENT '예매 회원 FK',
     screening_id         BIGINT         NULL COMMENT '상영 회차 FK',
     coupon_issuance_id   BIGINT         NULL COMMENT '사용 쿠폰 발급 FK (nullable)',
     movie_payment_id     BIGINT         NULL COMMENT '확정 결제 FK (nullable, UNIQUE)',
-    code                 VARCHAR(255)   NOT NULL COMMENT '예매 번호(고유 코드)',
     seat_names           VARCHAR(255)   NOT NULL COMMENT '예매 좌석명 목록(seat_row+seat_column, 쉼표 구분. 예: A1, B2, C3)',
     original_amount      DECIMAL(10, 2) NOT NULL COMMENT '할인 전 예매 금액',
     status               VARCHAR(30)    NOT NULL COMMENT '예매 상태(ReservationStatus: EXPIRED/SUCCESS/PENDING/CANCELED)',
@@ -284,7 +286,7 @@ CREATE TABLE IF NOT EXISTS movie_reservation
 CREATE TABLE IF NOT EXISTS movie_reservation_seat
 (
     movie_reservation_seat_id BIGINT       NOT NULL AUTO_INCREMENT COMMENT '예매 좌석 PK',
-    movie_reservation_id      BIGINT       NULL COMMENT '예매 FK',
+    movie_reservation_id      BINARY(16)   NULL COMMENT '예매 FK (UUID v7)',
     screening_id              BIGINT       NULL COMMENT '상영 회차 FK',
     theater_seat_id           BIGINT       NULL COMMENT '상영관 좌석 FK',
     status                    VARCHAR(30)  NULL COMMENT '좌석 점유 상태(ReservationSeatStatus: RESERVED, NULL=취소/만료). 유니크 제약 회피용',
@@ -317,7 +319,7 @@ CREATE TABLE IF NOT EXISTS movie_reservation_seat
 CREATE TABLE IF NOT EXISTS movie_payment
 (
     movie_payment_id     BIGINT         NOT NULL AUTO_INCREMENT COMMENT '결제 PK',
-    movie_reservation_id BIGINT         NOT NULL COMMENT '예매 FK (ManyToOne)',
+    movie_reservation_id BINARY(16)     NOT NULL COMMENT '예매 FK (ManyToOne, UUID v7)',
     idempotency_key      VARCHAR(64)    NOT NULL COMMENT '결제 시도 멱등키(PG orderId)',
     paid_amount          DECIMAL(10, 2) NOT NULL COMMENT '결제 금액',
     status               VARCHAR(30)    NOT NULL COMMENT '결제 상태(PaymentStatus: PENDING/COMPLETE/FAILED/CANCELED)',
@@ -343,22 +345,20 @@ CREATE TABLE IF NOT EXISTS movie_payment
 --   soft delete 없음, updated_* 없음 (이력은 append-only 성격)
 --   예매 변경 시점의 스냅샷을 남긴다. 좌석 목록은 seat_names 문자열로 스냅샷되므로
 --   좌석/결제 컬렉션은 따로 두지 않는다 (필요하면 movie_reservation_id 로 원본 조회).
---   스냅샷이므로 원본 생명주기와 독립적이다: 참조 ID 를 값(BIGINT)으로만 보관하고
+--   스냅샷이므로 원본 생명주기와 독립적이다: 참조 ID 를 값으로만 보관하고
 --   물리적 FK 는 두지 않는다(원본 삭제·변경과 무관하게 이력 보존, 조회용 인덱스만).
 --   참조 ID: movie_reservation_id, member_id, screening_id, coupon_issuance_id(nullable)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS movie_reservation_history
 (
     movie_reservation_history_id BIGINT         NOT NULL AUTO_INCREMENT COMMENT '예매 이력 PK',
-    movie_reservation_id         BIGINT         NOT NULL COMMENT '원본 예매 ID(스냅샷, FK 없음)',
+    movie_reservation_id         BINARY(16)     NOT NULL COMMENT '원본 예매 ID(UUID v7 스냅샷, FK 없음)',
     member_id                    BIGINT         NOT NULL COMMENT '예매 회원 ID(스냅샷, FK 없음)',
     screening_id                 BIGINT         NOT NULL COMMENT '상영 회차 ID(스냅샷, FK 없음)',
     coupon_issuance_id           BIGINT         NULL COMMENT '사용 쿠폰 발급 ID(스냅샷, FK 없음)',
-    code                         VARCHAR(255)   NOT NULL COMMENT '예매 번호(스냅샷)',
     seat_names                   VARCHAR(255)   NOT NULL COMMENT '예매 좌석명 목록(스냅샷)',
     original_amount              DECIMAL(10, 2) NOT NULL COMMENT '할인 전 예매 금액(스냅샷)',
     expired_at                   DATETIME(6)    NULL COMMENT '예매 만료 일시(스냅샷)',
-    canceled_at                  DATETIME(6)    NULL COMMENT '예매 취소 일시(스냅샷)',
     status                       VARCHAR(30)    NOT NULL COMMENT '예매 상태(ReservationStatus)',
     change_type                  VARCHAR(30)    NOT NULL COMMENT '변경 종류(HistoryType: UPDATE)',
     change_reason                VARCHAR(255)   NULL COMMENT '변경 사유',
@@ -386,7 +386,7 @@ CREATE TABLE IF NOT EXISTS movie_reservation_history
 CREATE TABLE IF NOT EXISTS movie_payment_history
 (
     movie_payment_history_id BIGINT         NOT NULL AUTO_INCREMENT COMMENT '결제 이력 PK',
-    movie_reservation_id     BIGINT         NULL COMMENT '예매 ID(스냅샷, FK 없음)',
+    movie_reservation_id     BINARY(16)     NULL COMMENT '예매 ID(UUID v7 스냅샷, FK 없음)',
     idempotency_key          VARCHAR(64)    NOT NULL COMMENT '결제 시도 멱등키(스냅샷)',
     paid_amount              DECIMAL(10, 2) NOT NULL COMMENT '결제 금액(스냅샷)',
     method                   VARCHAR(30)    NOT NULL COMMENT '결제 수단(PaymentMethod, 스냅샷)',

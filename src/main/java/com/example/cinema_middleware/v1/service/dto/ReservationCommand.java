@@ -1,10 +1,13 @@
 package com.example.cinema_middleware.v1.service.dto;
 
+import com.example.cinema_middleware.v1.domain.entity.enums.PaymentMethod;
+import com.example.cinema_middleware.v1.domain.entity.enums.PaymentStatus;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
 import jakarta.annotation.Nullable;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 /**
  * 예매 도메인 서비스 입력 커맨드.
@@ -20,7 +23,7 @@ public final class ReservationCommand {
             LocalDate startDate,
             LocalDate endDate,
             @Nullable ReservationStatus status,
-            @Nullable String code
+            @Nullable UUID reservationId
     ) {
     }
 }

@@ -5,6 +5,7 @@ import jakarta.annotation.Nullable;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 public final class ReservationCondition {
 
@@ -15,7 +16,7 @@ public final class ReservationCondition {
             LocalDate startDate,
             LocalDate endDate,
             @Nullable ReservationStatus status,
-            @Nullable String code
+            @Nullable UUID reservationId
     ) {
     }
 }

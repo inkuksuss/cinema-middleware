@@ -5,7 +5,6 @@ import com.example.cinema_middleware.v1.domain.entity.enums.*;
 import com.example.cinema_middleware.v1.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +14,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -71,11 +69,11 @@ class MovieReservationSeatServiceTest {
         movie.setCategory(MovieCategory.ROMANCE);
         movie.setStatus(MovieStatus.DISPLAY);
         Movie savedMovie = movieRepository.save(movie);
-        Screening screening = Screening.create(savedMovie, savedTheater, now, LocalTime.MIN, ScreeningStatus.ON_SALE);
+        Screening screening = Screening.create(savedMovie, savedTheater, ScreenType.V_2D, now, LocalTime.MIN, ScreeningStatus.ON_SALE);
         Screening savedScreening = screeningRepository.save(screening);
-        MovieReservation movieReservation = MovieReservation.create(savedMember, savedScreening, "a", "a", BigDecimal.TEN);
+        MovieReservation movieReservation = MovieReservation.create(savedMember, savedScreening, "a", BigDecimal.TEN);
         MovieReservation savedReservation = movieReservationRepository.save(movieReservation);
-        TheaterSeat theaterSeat = TheaterSeat.create(savedTheater, "1", "a", SeatGrade.NORMAL);
+        TheaterSeat theaterSeat = TheaterSeat.create(savedTheater, "1", "a", SeatGrade.NORMAL, BigDecimal.valueOf(SeatGrade.NORMAL.getPrice()));
         TheaterSeat savedTheaterSeat = theaterSeatRepository.save(theaterSeat);
 
         ExecutorService es = Executors.newFixedThreadPool(10);
@@ -87,7 +85,7 @@ class MovieReservationSeatServiceTest {
         for (int i = 0; i < 10; i++) {
             es.submit(() -> {
                 try {
-                    MovieReservationSeat movieReservationSeat = MovieReservationSeat.createTemp(savedScreening, savedTheaterSeat);
+                    MovieReservationSeat movieReservationSeat = MovieReservationSeat.create(savedReservation, savedScreening, savedTheaterSeat);
                     startLatch.await();
                     movieReservationSeatRepository.save(movieReservationSeat);
                 }
@@ -143,11 +141,11 @@ class MovieReservationSeatServiceTest {
         movie.setCategory(MovieCategory.ROMANCE);
         movie.setStatus(MovieStatus.DISPLAY);
         Movie savedMovie = movieRepository.save(movie);
-        Screening screening = Screening.create(savedMovie, savedTheater, now, LocalTime.MIN, ScreeningStatus.ON_SALE);
+        Screening screening = Screening.create(savedMovie, savedTheater, ScreenType.V_2D, now, LocalTime.MIN, ScreeningStatus.ON_SALE);
         Screening savedScreening = screeningRepository.save(screening);
-        MovieReservation movieReservation = MovieReservation.create(savedMember, savedScreening, "a", "b", BigDecimal.TEN);
+        MovieReservation movieReservation = MovieReservation.create(savedMember, savedScreening, "b", BigDecimal.TEN);
         MovieReservation savedReservation = movieReservationRepository.save(movieReservation);
-        TheaterSeat theaterSeat = TheaterSeat.create(savedTheater, "1", "a", SeatGrade.NORMAL);
+        TheaterSeat theaterSeat = TheaterSeat.create(savedTheater, "1", "a", SeatGrade.NORMAL, BigDecimal.valueOf(SeatGrade.NORMAL.getPrice()));
         TheaterSeat savedTheaterSeat = theaterSeatRepository.save(theaterSeat);
 
         ExecutorService es = Executors.newFixedThreadPool(10);
@@ -159,7 +157,7 @@ class MovieReservationSeatServiceTest {
         for (int i = 0; i < 10; i++) {
             es.submit(() -> {
                 try {
-                    MovieReservationSeat movieReservationSeat = MovieReservationSeat.createTemp(savedScreening, savedTheaterSeat);
+                    MovieReservationSeat movieReservationSeat = MovieReservationSeat.create(savedReservation, savedScreening, savedTheaterSeat);
                     movieReservationSeat.giveUpSeat();
                     startLatch.await();
                     movieReservationSeatRepository.save(movieReservationSeat);

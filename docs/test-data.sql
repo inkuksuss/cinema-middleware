@@ -23,7 +23,7 @@
 --   member 10,000 / movie 36 / cinema 3 / theater 20 / theater_seat 6,000(관당 300석)
 --   screening 1,050 (오늘 -7 ~ +6일 × 운영 15관 × 하루 5회)
 --   movie_reservation ~2.2만 / movie_reservation_seat ~5만 / movie_payment ~2.2만
---   coupon 10 / coupon_issuance ~1.6천 / file_master 86 / common_code 14그룹 · 49코드
+--   coupon 10 / coupon_issuance ~6.2천 / file_master 86 / common_code 14그룹 · 49코드
 --   movie_reservation_history / movie_payment_history / log_master 는 비워 둔다
 --   (애플리케이션이 변경 시점에 쌓는 이력이라 더미 근거가 없다).
 --
@@ -44,6 +44,9 @@
 --   - 예매 상태: 지난 회차 SUCCESS 85 / CANCELED 10 / EXPIRED 5(%),
 --     판매 중 회차 SUCCESS 78 / CANCELED 10 / EXPIRED 7 / PENDING 5(%).
 --     PENDING 은 @now 직전 몇 분 안에 만든 홀드라 expired_at 이 미래다.
+--   - 예매 PK(movie_reservation_id)는 UUID v7(BINARY(16)) — 앞 48비트 = created_at 의 밀리초,
+--     나머지는 난수 대신 계산용 순번(rid)으로 채워 실행할 때마다 같은 값이 나온다(별도 예매 번호 컬럼 없음).
+--     결제 멱등키 idempotency_key = 'PAY-{BIN_TO_UUID(예매 PK)}-{시도 번호}'.
 --   - expired_at = created_at + 5분 (MovieReservation.create 와 동일).
 --   - seat_names 는 ", " 구분(예: "H9, H10") — MovieReservation.getSeatCount() 와 동일 포맷.
 --   - original_amount = 예매 좌석 가격 합계(실제 배정 좌석에서 역산).
@@ -389,6 +392,7 @@ FROM tmp_td_scr;
 --                  rn 은 member_id 와 무관하게 해시로 섞은 순서 — 앞쪽 10% 단골, 60% 최근 활동 고객.
 --    tmp_td_block: 4석 블록 75개(15행 × 5블록)의 선호도 순위 — 중앙 행(H~K)·중앙 블록부터
 --    tmp_td_res  : 예매 1건당 1행 (상태·좌석 수·시각·결제/쿠폰 여부를 미리 계산)
+--                  rid 는 계산용 순번, res_id 는 실제 PK(UUID v7, BINARY(16))다.
 -- =============================================================================
 CREATE TABLE tmp_td_cust
 (
@@ -427,7 +431,7 @@ CREATE TABLE tmp_td_res
   p           INT,          -- 회차 내 예매 순번 = 배정 블록 순위
   seat_cnt    INT,
   status      VARCHAR(30),
-  code        VARCHAR(40),
+  res_id      BINARY(16) UNIQUE,  -- movie_reservation PK (UUID v7)
   created_at  DATETIME(6),
   paid_at     DATETIME(6),
   canceled_at DATETIME(6),
@@ -441,7 +445,7 @@ CREATE TABLE tmp_td_res
 --   날짜 기준치: 지난 회차 45 / 오늘 38 / +1일 26 / +2일 16 / +3일 9 / PRE_SALE 0
 --   시간대 계수(%): 09:40 40 / 12:50 60 / 16:00 70 / 19:10 100 / 22:20 65
 INSERT INTO tmp_td_res
-  (rid, screening_id, theater_id, member_id, p, seat_cnt, status, code,
+  (rid, screening_id, theater_id, member_id, p, seat_cnt, status, res_id,
    created_at, paid_at, canceled_at, fail_before, pending_pay, use_coupon, method)
 WITH RECURSIVE
   seq(p) AS (SELECT 1 UNION ALL SELECT p + 1 FROM seq WHERE p < 75),
@@ -506,7 +510,12 @@ SELECT
   t.p,
   t.seat_cnt,
   t.status,
-  CONCAT('R', DATE_FORMAT(t.start_date, '%y%m%d'), '-', LPAD(t.rid, 6, '0')),
+  -- UUID v7: 48비트 ms 타임스탬프(created_at) + 버전 7 + 12비트 + 변형(10xx) + 62비트.
+  --   MySQL 에 v7 함수가 없어 직접 조립한다. 난수 대신 rid 를 넣어 결정적·유일하게 만든다.
+  UNHEX(CONCAT(
+    LPAD(HEX(FLOOR(UNIX_TIMESTAMP(t.created_at) * 1000)), 12, '0'),
+    '7', LPAD(HEX(MOD(t.rid, 4096)), 3, '0'),
+    HEX(8 + MOD(t.rid, 4)), LPAD(HEX(t.rid), 15, '0'))),
   t.created_at,
   CASE WHEN t.status IN ('SUCCESS', 'CANCELED')
        THEN t.created_at + INTERVAL (60 + MOD(t.rid, 180)) SECOND END,                  -- 1~4분 뒤 결제
@@ -536,11 +545,11 @@ END;
 -- =============================================================================
 INSERT INTO movie_reservation
   (movie_reservation_id, member_id, screening_id, coupon_issuance_id, movie_payment_id,
-   code, seat_names, original_amount, status, expired_at,
+   seat_names, original_amount, status, expired_at,
    created_at, updated_at, created_by, updated_by)
 SELECT
-  rid, member_id, screening_id, NULL, NULL,
-  code, '', 0, status,
+  res_id, member_id, screening_id, NULL, NULL,
+  '', 0, status,
   created_at + INTERVAL 5 MINUTE,
   created_at,
   CASE status
@@ -566,7 +575,7 @@ INSERT INTO movie_reservation_seat
 WITH RECURSIVE k(kk) AS (SELECT 1 UNION ALL SELECT kk + 1 FROM k WHERE kk < 4)
 SELECT
   ROW_NUMBER() OVER (ORDER BY r.rid, k.kk),
-  r.rid,
+  r.res_id,
   r.screening_id,
   (r.theater_id - 1) * 300 + (b.row_no - 1) * 20 + (b.blk - 1) * 4
     + k.kk + CASE WHEN r.seat_cnt <= 2 THEN 1 ELSE 0 END,
@@ -601,15 +610,15 @@ SET r.seat_names = agg.seat_names,
 
 -- =============================================================================
 -- 10. movie_payment (DefaultEntity) — 예매 : 결제 시도 = 1 : N
---     attempt 1 이 FAILED 면 attempt 2 가 실제 결제. idempotency_key = 'PAY-{예매코드}-{시도}'.
+--     attempt 1 이 FAILED 면 attempt 2 가 실제 결제. idempotency_key = 'PAY-{예매 UUID}-{시도}'.
 -- =============================================================================
 INSERT INTO movie_payment
   (movie_payment_id, movie_reservation_id, idempotency_key, paid_amount, status, method,
    paid_at, canceled_at, created_at, updated_at, created_by, updated_by)
 SELECT
   ROW_NUMBER() OVER (ORDER BY x.rid, x.attempt),
-  x.rid,
-  CONCAT('PAY-', x.code, '-', x.attempt),
+  x.res_id,
+  CONCAT('PAY-', BIN_TO_UUID(x.res_id), '-', x.attempt),
   x.amount,
   x.pay_status,
   x.method,
@@ -621,25 +630,25 @@ SELECT
 FROM (
   -- 실패한 선행 시도 (카드 한도 초과 등)
   SELECT
-    t.rid, 1 AS attempt, t.code, r.original_amount AS amount, 'FAILED' AS pay_status,
+    t.rid, t.res_id, 1 AS attempt, r.original_amount AS amount, 'FAILED' AS pay_status,
     'CARD' AS method, NULL AS paid_at, NULL AS canceled_at,
     t.created_at + INTERVAL 30 SECOND AS created_at,
     t.created_at + INTERVAL 50 SECOND AS updated_at,
     t.member_id
   FROM tmp_td_res t
-  JOIN movie_reservation r ON r.movie_reservation_id = t.rid
+  JOIN movie_reservation r ON r.movie_reservation_id = t.res_id
   WHERE t.fail_before = 1
   UNION ALL
   -- 승인(COMPLETE) / 결제 후 취소(CANCELED) / 진행 중(PENDING) 시도
   SELECT
-    t.rid, 1 + t.fail_before, t.code, r.original_amount,
+    t.rid, t.res_id, 1 + t.fail_before, r.original_amount,
     CASE t.status WHEN 'SUCCESS' THEN 'COMPLETE' WHEN 'CANCELED' THEN 'CANCELED' ELSE 'PENDING' END,
     t.method, t.paid_at, t.canceled_at,
     t.created_at + INTERVAL (30 + 30 * t.fail_before) SECOND,
     COALESCE(t.canceled_at, t.paid_at, t.created_at + INTERVAL (30 + 30 * t.fail_before) SECOND),
     t.member_id
   FROM tmp_td_res t
-  JOIN movie_reservation r ON r.movie_reservation_id = t.rid
+  JOIN movie_reservation r ON r.movie_reservation_id = t.res_id
   WHERE t.status IN ('SUCCESS', 'CANCELED')
      OR (t.status = 'PENDING' AND t.pending_pay = 1)
 ) x;
@@ -687,6 +696,7 @@ CREATE TABLE tmp_td_ci
 (
   coupon_issuance_id BIGINT PRIMARY KEY,
   rid                BIGINT,
+  res_id             BINARY(16),  -- movie_reservation PK (UUID v7)
   member_id          BIGINT,
   coupon_id          BIGINT,
   created_at         DATETIME(6),
@@ -696,6 +706,7 @@ INSERT INTO tmp_td_ci
 SELECT
   ROW_NUMBER() OVER (ORDER BY t.rid),
   t.rid,
+  t.res_id,
   t.member_id,
   CASE WHEN m.grade = 'ROLE_VIP' AND MOD(t.rid, 2) = 0 THEN 3
        ELSE ELT(1 + MOD(t.rid, 5), 1, 2, 4, 5, 10) END,
@@ -789,7 +800,7 @@ SET c.issued_quantity = COALESCE(i.n, 0),
     c.total_quantity  = CASE WHEN c.status = 'SOLD_OUT' THEN COALESCE(i.n, 0) ELSE c.total_quantity END;
 
 UPDATE movie_reservation r
-JOIN tmp_td_ci ci ON ci.rid = r.movie_reservation_id
+JOIN tmp_td_ci ci ON ci.res_id = r.movie_reservation_id
 SET r.coupon_issuance_id = ci.coupon_issuance_id;
 
 

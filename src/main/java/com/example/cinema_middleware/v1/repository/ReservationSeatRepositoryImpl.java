@@ -19,7 +19,9 @@ public class ReservationSeatRepositoryImpl implements ReservationSeatRepositoryQ
         return queryFactory
                 .selectOne()
                 .from(movieReservationSeat)
-                .where(movieReservationSeat.status.eq(ReservationSeatStatus.RESERVED))
+                .where(
+                        movieReservationSeat.theaterSeat.id.eq(theaterSeatId),
+                        movieReservationSeat.status.eq(ReservationSeatStatus.RESERVED))
                 .fetchFirst() != null;
     }
 }

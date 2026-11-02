@@ -9,11 +9,11 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.*;
-import org.springframework.util.StringUtils;
 
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static com.example.cinema_middleware.v1.domain.entity.QCinema.cinema;
 import static com.example.cinema_middleware.v1.domain.entity.QCouponIssuance.*;
@@ -40,7 +40,6 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
                         Projections.constructor(
                                 ReservationDao.MyReservation.class,
                                 movieReservation.id,
-                                movieReservation.code,
                                 movieReservation.status,
 
                                 movie.id,
@@ -94,7 +93,6 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
                         Projections.constructor(
                                 ReservationDao.MyReservation.class,
                                 movieReservation.id,
-                                movieReservation.code,
                                 movieReservation.status,
 
                                 movie.id,
@@ -133,13 +131,12 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
     }
 
     @Override
-    public Optional<ReservationDao.MyReservationDetail> findMyReservationDetail(Long reservationId) {
+    public Optional<ReservationDao.MyReservationDetail> findMyReservationDetail(UUID reservationId) {
         ReservationDao.MyReservationDetail content = queryFactory
                 .select(
                         Projections.constructor(
                                 ReservationDao.MyReservationDetail.class,
                                 movieReservation.id,
-                                movieReservation.code,
                                 movieReservation.originalAmount,
                                 movieReservation.seatNames,
                                 movieReservation.status,
@@ -181,7 +178,7 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
                 )
                 .fetchOne();
 
-        return Optional.of(content);
+        return Optional.ofNullable(content);
     }
 
     @Override
@@ -190,7 +187,6 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
                 .select(Projections.constructor(
                         ReservationDao.AdminRow.class,
                         movieReservation.id,
-                        movieReservation.code,
                         movieReservation.status,
                         movieReservation.createdAt,
                         movieReservation.updatedAt,
@@ -222,7 +218,7 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
                 .where(
                         movieReservation.createdAt.goe(condition.startDate().atStartOfDay()),
                         movieReservation.createdAt.loe(condition.endDate().atTime(LocalTime.MAX)),
-                        codeEq(condition.code()),
+                        reservationIdEq(condition.reservationId()),
                         reservationStatusEq(condition.status())
                 )
                 .offset(condition.pageable().getOffset())
@@ -236,7 +232,7 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
                 .where(
                         movieReservation.createdAt.goe(condition.startDate().atStartOfDay()),
                         movieReservation.createdAt.loe(condition.endDate().atTime(LocalTime.MAX)),
-                        codeEq(condition.code()),
+                        reservationIdEq(condition.reservationId()),
                         reservationStatusEq(condition.status())
                 )
                 .fetchOne();
@@ -245,12 +241,11 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
     }
 
     @Override
-    public Optional<ReservationDao.AdminRowDetail> findAdminDetail(Long reservationId) {
+    public Optional<ReservationDao.AdminRowDetail> findAdminDetail(UUID reservationId) {
         ReservationDao.AdminRowDetail content = queryFactory
                 .select(Projections.constructor(
                         ReservationDao.AdminRowDetail.class,
                         movieReservation.id,
-                        movieReservation.code,
                         movieReservation.originalAmount,
                         movieReservation.seatNames,
                         movieReservation.status,
@@ -293,7 +288,7 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
                 .where(movieReservation.id.eq(reservationId))
                 .fetchOne();
 
-        return Optional.of(content);
+        return Optional.ofNullable(content);
     }
 
     @Override
@@ -313,7 +308,7 @@ public class MovieReservationRepositoryImpl implements MovieReservationRepositor
         return status != null ? movieReservation.status.eq(status) : null;
     }
 
-    private BooleanExpression codeEq(String code) {
-        return StringUtils.hasText(code) ? movieReservation.code.eq(code) : null;
+    private BooleanExpression reservationIdEq(UUID reservationId) {
+        return reservationId != null ? movieReservation.id.eq(reservationId) : null;
     }
 }

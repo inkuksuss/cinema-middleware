@@ -1,5 +1,6 @@
 package com.example.cinema_middleware.v1.controller;
 
+import java.util.UUID;
 import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
 import com.example.cinema_middleware.v1.service.AdminMovieReservationService;
@@ -28,13 +29,13 @@ public class AdminMovieReservationController {
             @RequestParam LocalDate startDate,
             @RequestParam LocalDate endDate,
             @RequestParam(required = false) ReservationStatus status,
-            @RequestParam(required = false) String code
+            @RequestParam(required = false) UUID reservationId
     ) {
         Page<ReservationDto.AdminSummary> result = reservationService.getReservationSummary(
                 new ReservationCommand.SearchAdminRow(
                         pageable,
                         startDate, endDate,
-                        status, code)
+                        status, reservationId)
         );
 
         return ResponseEntity
@@ -43,7 +44,7 @@ public class AdminMovieReservationController {
     }
 
     @GetMapping("/{reservationId}")
-    public ResponseEntity<Result<ReservationDto.AdminDetail>> getReservationDetail(@PathVariable Long reservationId) {
+    public ResponseEntity<Result<ReservationDto.AdminDetail>> getReservationDetail(@PathVariable UUID reservationId) {
         ReservationDto.AdminDetail result = reservationService.getReservationDetail(reservationId);
 
         return ResponseEntity
@@ -52,7 +53,7 @@ public class AdminMovieReservationController {
     }
 
     @PostMapping("/{reservationId}/cancel")
-    public ResponseEntity<Result<Void>> cancel(@PathVariable Long reservationId) {
+    public ResponseEntity<Result<Void>> cancel(@PathVariable UUID reservationId) {
         reservationService.cancel(reservationId);
 
         return ResponseEntity

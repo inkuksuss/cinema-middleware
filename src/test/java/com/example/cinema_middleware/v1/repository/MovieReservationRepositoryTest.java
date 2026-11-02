@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 
 @Slf4j
@@ -34,7 +35,7 @@ class MovieReservationRepositoryTest {
 
     @Test
     void findMyReservationDetail() {
-        reservationRepository.findMyReservationDetail(1L);
+        reservationRepository.findMyReservationDetail(UUID.randomUUID());
     }
 
     @Test
@@ -46,7 +47,7 @@ class MovieReservationRepositoryTest {
 
     @Test
     void findAdminDetail() {
-        reservationRepository.findAdminDetail(1L);
+        reservationRepository.findAdminDetail(UUID.randomUUID());
     }
 
     @Test

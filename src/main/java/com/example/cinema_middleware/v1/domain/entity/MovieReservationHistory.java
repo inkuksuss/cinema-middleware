@@ -10,6 +10,7 @@ import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -20,8 +21,8 @@ public class MovieReservationHistory extends HistoryEntity {
     @Column(name = "movie_reservation_history_id")
     private Long id;
 
-    @Column(name = "movie_reservation_id", nullable = false)
-    private Long movieReservationId;
+    @Column(name = "movie_reservation_id", nullable = false, columnDefinition = "BINARY(16)")
+    private UUID movieReservationId;
 
     @Column(name = "member_id", nullable = false)
     private Long memberId;
@@ -31,9 +32,6 @@ public class MovieReservationHistory extends HistoryEntity {
 
     @Column(name = "coupon_issuance_id")
     private Long couponIssuanceId;
-
-    @Column(nullable = false)
-    private String code;
 
     @Column(nullable = false)
     private String seatNames;
@@ -59,7 +57,6 @@ public class MovieReservationHistory extends HistoryEntity {
         if (reservation.getCouponIssuance() != null) {
             history.couponIssuanceId = reservation.getCouponIssuance().getId();
         }
-        history.code = reservation.getCode();
         history.seatNames = reservation.getSeatNames();
         history.originalAmount = reservation.getOriginalAmount();
         history.status = reservation.getStatus();

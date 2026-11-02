@@ -6,22 +6,17 @@ import com.example.cinema_middleware.v1.controller.response.Result;
 import com.example.cinema_middleware.v1.service.MovieReservationService;
 import com.example.cinema_middleware.v1.service.dto.ReservationDto;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
-import com.example.cinema_middleware.v1.support.exception.ReservationExpiredException;
-import com.example.cinema_middleware.v1.support.exception.ScreeningNotOnSaleException;
-import com.example.cinema_middleware.v1.support.exception.SeatAlreadyTakenException;
-import com.example.cinema_middleware.v1.support.exception.SeatNotOnSaleException;
-import com.example.cinema_middleware.v1.support.exception.TargetNotFoundException;
+import com.example.cinema_middleware.v1.support.exception.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.NoSuchElementException;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/reservation")
@@ -31,24 +26,14 @@ public class MovieReservationController {
     private final MovieReservationService movieReservationService;
 
     @PostMapping("/")
-    public ResponseEntity<Result<Long>> createReservation(@RequestBody @Validated ReservationRequest.Create request) {
+    public ResponseEntity<Result<UUID>> createReservation(@RequestBody @Validated ReservationRequest.Create request) {
         try {
-            Long result =
+            UUID result =
                     movieReservationService.addReservation(request.screeningId(), request.theaterSeatIdList());
 
             return ResponseEntity
                     .ok()
                     .body(Result.ofSuccess(result));
-        }
-        catch (TargetNotFoundException e) {
-            return ResponseEntity
-                    .ok()
-                    .body(Result.of(ResponseCode.NOT_FOUND.getCode(), "잘못된 좌석 혹은 상영입니다.", null));
-        }
-        catch (IllegalStateException e) {
-            return ResponseEntity
-                    .ok()
-                    .body(Result.of(ResponseCode.INVALID_ARGUMENT.getCode(), "좌석 정보가 옳바르지 않습니다.", null));
         }
         catch (ScreeningNotOnSaleException e) {
             return ResponseEntity
@@ -65,36 +50,10 @@ public class MovieReservationController {
                     .ok()
                     .body(Result.of(ResponseCode.SEAT_ALREADY_TAKEN.getCode(), "이미 예매 된 좌석입니다.", null));
         }
-    }
-
-    @PostMapping("/{reservationId}/confirm")
-    public ResponseEntity<Result<ReservationDto.AdminDetail>> confirmReservation(@PathVariable Long reservationId) {
-        try {
-            ReservationDto.AdminDetail result = movieReservationService.confirmReservation(reservationId);
-
+        catch (DuplicateSeatException e) {
             return ResponseEntity
                     .ok()
-                    .body(Result.ofSuccess(result));
-        }
-        catch (AccessDeniedException e) {
-            return ResponseEntity
-                    .ok()
-                    .body(Result.of(ResponseCode.UNAUTHORIZED.getCode(), "접근할 수 없습니다.", null));
-        }
-        catch (NoSuchElementException e) {
-            return ResponseEntity
-                    .ok()
-                    .body(Result.of(ResponseCode.NOT_FOUND.getCode(), "접근할 수 없습니다.", null));
-        }
-        catch (IllegalStateException e) {
-            return ResponseEntity
-                    .ok()
-                    .body(Result.of(ResponseCode.ILLEGAL_STATE.getCode(), "확정할 수 없는 예매정보입니다.", null));
-        }
-        catch (ReservationExpiredException e) {
-            return ResponseEntity
-                    .ok()
-                    .body(Result.of(ResponseCode.RESERVATION_EXPIRED.getCode(), "이미 만료 된 예매입니다.", null));
+                    .body(Result.of(ResponseCode.DUPLICATE_SEAT.getCode(), "중복된 좌석이 포함되어 있습니다.", null));
         }
     }
 
@@ -113,7 +72,7 @@ public class MovieReservationController {
 
     @GetMapping("/{reservationId}/detail")
     public ResponseEntity<Result<ReservationDto.Detail>> getReservationDetail(
-            @PathVariable Long reservationId
+            @PathVariable UUID reservationId
     ) {
         ReservationDto.Detail result = movieReservationService.getReservationDetail(reservationId);
 

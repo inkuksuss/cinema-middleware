@@ -18,7 +18,6 @@ public final class ReservationDtoFactory {
 
         return new ReservationDto.Summary(
                 reservation.reservationId(),
-                reservation.code(),
                 reservation.status(),
 
                 reservation.movieId(),
@@ -45,7 +44,6 @@ public final class ReservationDtoFactory {
 
         return new ReservationDto.Detail(
                 reservation.reservationId(),
-                reservation.code(),
                 reservation.originalAmount(),
                 reservation.seatNames(),
                 reservation.status(),
@@ -80,7 +78,6 @@ public final class ReservationDtoFactory {
 
         return new ReservationDto.AdminSummary(
                 adminRow.reservationId(),
-                adminRow.code(),
                 adminRow.status(),
 
                 adminRow.memberId(),
@@ -107,7 +104,6 @@ public final class ReservationDtoFactory {
 
         return new ReservationDto.AdminDetail(
                 detail.reservationId(),
-                detail.code(),
                 detail.originalAmount(),
                 detail.seatNames(),
                 detail.status(),

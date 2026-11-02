@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 
 import java.util.Optional;
+import java.util.UUID;
 
 public interface MovieReservationRepositoryQuery {
 
@@ -16,11 +17,11 @@ public interface MovieReservationRepositoryQuery {
 
     Slice<ReservationDao.MyReservation> findMyReservationSlice(Pageable pageable, Long memberId, @Nullable ReservationStatus status);
 
-    Optional<ReservationDao.MyReservationDetail> findMyReservationDetail(Long reservationId);
+    Optional<ReservationDao.MyReservationDetail> findMyReservationDetail(UUID reservationId);
 
     Page<ReservationDao.AdminRow> findAdminRow(ReservationCondition.AdminRow adminRow);
 
-    Optional<ReservationDao.AdminRowDetail> findAdminDetail(Long reservationId);
+    Optional<ReservationDao.AdminRowDetail> findAdminDetail(UUID reservationId);
 
     boolean existsAliveByScreeningId(Long screeningId);
 }

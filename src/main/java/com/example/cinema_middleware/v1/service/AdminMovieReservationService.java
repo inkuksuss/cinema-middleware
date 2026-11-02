@@ -1,5 +1,6 @@
 package com.example.cinema_middleware.v1.service;
 
+import java.util.UUID;
 import com.example.cinema_middleware.v1.repository.MovieReservationRepository;
 import com.example.cinema_middleware.v1.repository.dao.ReservationDao;
 import com.example.cinema_middleware.v1.repository.dao.search.ReservationCondition;
@@ -30,14 +31,14 @@ public class AdminMovieReservationService {
         ReservationCondition.AdminRow condition = new ReservationCondition.AdminRow(
                 search.pageable(),
                 search.startDate(), search.endDate(),
-                search.status(), search.code()
+                search.status(), search.reservationId()
         );
 
         return reservationRepository.findAdminRow(condition)
                 .map(ReservationDtoFactory::adminSummary);
     }
 
-    public ReservationDto.AdminDetail getReservationDetail(Long reservationId) {
+    public ReservationDto.AdminDetail getReservationDetail(UUID reservationId) {
         ReservationDao.AdminRowDetail detail = reservationRepository.findAdminDetail(reservationId)
                 .orElseThrow(() -> {
                     throw new TargetNotFoundException();
@@ -46,7 +47,7 @@ public class AdminMovieReservationService {
         return ReservationDtoFactory.adminDetail(detail);
     }
 
-    public void cancel(Long reservationId) {
+    public void cancel(UUID reservationId) {
         throw new UnsupportedOperationException("미구현");
     }
 }

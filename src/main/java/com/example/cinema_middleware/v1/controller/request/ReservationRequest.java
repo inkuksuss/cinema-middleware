@@ -1,10 +1,14 @@
 package com.example.cinema_middleware.v1.controller.request;
 
+import com.example.cinema_middleware.v1.domain.entity.enums.PaymentMethod;
+import com.example.cinema_middleware.v1.domain.entity.enums.PaymentStatus;
+import com.example.cinema_middleware.v1.service.dto.ReservationCommand;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 예매 API 요청 DTO 모음.

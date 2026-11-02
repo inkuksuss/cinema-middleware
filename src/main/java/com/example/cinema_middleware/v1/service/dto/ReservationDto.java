@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.UUID;
 
 /**
  * 예매 도메인 서비스 응답 DTO 모음.
@@ -24,8 +25,7 @@ public final class ReservationDto {
 
     /** 사용자 예매 내역 목록 */
     public record Summary(
-            Long reservationId,
-            String code,
+            UUID reservationId,
             ReservationStatus status,
 
             Long movieId,
@@ -48,8 +48,7 @@ public final class ReservationDto {
 
     /** 사용자 예매 상세 — 최신 결제 금액 포함 */
     public record Detail(
-            Long reservationId,
-            String code,
+            UUID reservationId,
             BigDecimal originalAmount,
             String seatNames,
             ReservationStatus status,
@@ -81,8 +80,7 @@ public final class ReservationDto {
 
     /** 관리자 예매 목록 */
     public record AdminSummary(
-            Long reservationId,
-            String code,
+            UUID reservationId,
             ReservationStatus status,
 
             Long memberId,
@@ -106,8 +104,7 @@ public final class ReservationDto {
 
     /** 관리자 예매 상세 */
     public record AdminDetail(
-            Long reservationId,
-            String code,
+            UUID reservationId,
             BigDecimal originalAmount,
             String seatNames,
             ReservationStatus status,

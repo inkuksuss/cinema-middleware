@@ -3,7 +3,7 @@
 # cinema-middleware 테스트 데이터 적재 스크립트
 #
 #   1. docker compose 인프라(MySQL) 기동 확인
-#   2. 테이블이 12개 미만이면 schema.sql 적재
+#   2. 테이블이 15개 미만이면 schema.sql 적재 (기존 테이블 구조는 바꾸지 않음 — 스키마 변경은 수동 반영)
 #   3. docs/test-data.sql 적재 (내부에서 TRUNCATE 후 INSERT → 몇 번 실행해도 동일)
 #   4. 행수 · 좌석/예매/결제/쿠폰 정합성 · FK 무결성 검증 출력
 #
@@ -12,7 +12,7 @@
 #   BASE_DATE=2026-12-25 bash scripts/load-test-data.sh   # 기준일 변경
 #
 # 환경변수 (미지정 시 docker-compose.yml 기본값):
-#   DB_NAME(cinema) DB_USER(cinema_admin) DB_PASS(cinema_password)
+#   DB_NAME(cinema) DB_USER(cinema_admin) DB_PASS
 #   COMPOSE_SERVICE(mysql) BASE_DATE(미지정 시 test-data.sql 파일 기본값 2026-11-01)
 # =============================================================================
 set -euo pipefail

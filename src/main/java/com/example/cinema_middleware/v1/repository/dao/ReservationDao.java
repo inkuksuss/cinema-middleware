@@ -6,12 +6,12 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.UUID;
 
 public final class ReservationDao {
 
     public record MyReservation(
-            Long reservationId,
-            String code,
+            UUID reservationId,
             ReservationStatus status,
 
             Long movieId,
@@ -33,8 +33,7 @@ public final class ReservationDao {
     }
 
     public record MyReservationDetail(
-            Long reservationId,
-            String code,
+            UUID reservationId,
             BigDecimal originalAmount,
             String seatNames,
             ReservationStatus status,
@@ -67,8 +66,7 @@ public final class ReservationDao {
     }
 
     public record AdminRow(
-            Long reservationId,
-            String code,
+            UUID reservationId,
             ReservationStatus status,
             LocalDateTime createdAt,
             LocalDateTime updatedAt,
@@ -94,8 +92,7 @@ public final class ReservationDao {
     }
 
     public record AdminRowDetail(
-            Long reservationId,
-            String code,
+            UUID reservationId,
             BigDecimal originalAmount,
             String seatNames,
             ReservationStatus status,

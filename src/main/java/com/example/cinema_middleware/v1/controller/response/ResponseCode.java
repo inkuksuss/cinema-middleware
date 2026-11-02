@@ -28,6 +28,9 @@ public enum ResponseCode {
     DUPLICATE_SEAT(23),
     DUPLICATE_VALUE(24),
     SEAT_NOT_ON_SALE(25),
+    TRANSACTION_FAILED(26),
+    RESERVED_SEAT_INCLUDE(27),
+    SERVICE_UNAVAILABLE(28),
     EXCEPTION(99);
 
     private final int code;

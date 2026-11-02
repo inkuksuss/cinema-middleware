@@ -12,6 +12,7 @@ import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -22,8 +23,8 @@ public class MoviePaymentHistory extends HistoryEntity {
     @Column(name = "movie_payment_history_id")
     private Long id;
 
-    @Column(name = "movie_reservation_id")
-    private Long reservationId;
+    @Column(name = "movie_reservation_id", columnDefinition = "BINARY(16)")
+    private UUID reservationId;
 
     @Column(nullable = false, length = 64, updatable = false)
     private String idempotencyKey;

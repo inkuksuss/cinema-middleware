@@ -5,19 +5,21 @@ import com.example.cinema_middleware.v1.domain.entity.enums.PaymentMethod;
 import com.example.cinema_middleware.v1.domain.entity.enums.PaymentStatus;
 import com.example.cinema_middleware.v1.domain.entity.enums.ReservationStatus;
 import com.example.cinema_middleware.v1.support.exception.AlreadyPaidException;
+import com.example.cinema_middleware.v1.support.exception.IllegalReservationStateException;
 import com.example.cinema_middleware.v1.support.exception.PaymentAmountMismatchException;
 import com.example.cinema_middleware.v1.support.exception.ReservationExpiredException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.UuidGenerator;
 import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.UUID;
 
 @Entity
 @Table(uniqueConstraints = @UniqueConstraint(name = "uk_movie_reservation_payment", columnNames = "movie_payment_id"))
@@ -25,9 +27,11 @@ import java.util.Objects;
 @Getter
 public class MovieReservation extends DefaultEntity {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "movie_reservation_id")
-    private Long id;
+    // UUID v7: 앞 48비트가 밀리초 타임스탬프라 시간순으로 정렬되어 InnoDB 클러스터드 인덱스에 순차 삽입된다.
+    // persist 시점에 애플리케이션에서 생성되므로 INSERT 전에 ID 가 확정된다. 외부 노출용 예매 번호를 겸한다.
+    @Id @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
+    @Column(name = "movie_reservation_id", columnDefinition = "BINARY(16)")
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id")
@@ -55,9 +59,6 @@ public class MovieReservation extends DefaultEntity {
     private Long version;
 
     @Column(nullable = false)
-    private String code;
-
-    @Column(nullable = false)
     private String seatNames;
 
     @Column(precision = 10, scale = 2, nullable = false)
@@ -70,17 +71,15 @@ public class MovieReservation extends DefaultEntity {
     @Column(updatable = false, nullable = false)
     private LocalDateTime expiredAt;
 
-    public static MovieReservation create(Member member, Screening screening, String code, String seatNames, BigDecimal originalAmount) {
+    public static MovieReservation create(Member member, Screening screening, String seatNames, BigDecimal originalAmount) {
         Assert.notNull(member, "member can not be null");
         Assert.notNull(screening, "screening can not be null");
-        Assert.hasText(code, "code can not be null");
         Assert.hasText(seatNames, "seatNames can not be null");
         Assert.notNull(originalAmount, "originalAmount can not be null");
 
         MovieReservation movieReservation = new MovieReservation();
         movieReservation.member = member;
         movieReservation.screening = screening;
-        movieReservation.code = code;
         movieReservation.seatNames = seatNames;
         movieReservation.originalAmount = originalAmount;
         movieReservation.status = ReservationStatus.PENDING;
@@ -89,18 +88,15 @@ public class MovieReservation extends DefaultEntity {
         return movieReservation;
     }
 
-    public void confirm() {
+    public void checkPayable() {
         LocalDateTime now = LocalDateTime.now();
 
         if (!ReservationStatus.PENDING.equals(this.getStatus())) {
-            throw new IllegalStateException();
+            throw new IllegalReservationStateException();
         }
         if (now.isAfter(this.expiredAt)) {
             throw new ReservationExpiredException();
         }
-
-        this.status = ReservationStatus.SUCCESS;
-        this.changeUpdatedAt(now);
     }
 
     /** seatNames 는 create 에서 ", " 로 이어 붙인 좌석명이므로 같은 구분자로 나눠 센다. */
@@ -110,37 +106,41 @@ public class MovieReservation extends DefaultEntity {
         return this.seatNames.split(", ").length;
     }
 
-    /** 결제 시도 생성. 이미 결제됐거나 결제 대기(PENDING)가 아닌 예매, 만료된 예매는 거부한다. */
-    public MoviePayment startPayment(String idempotencyKey, PaymentMethod method) {
-        if (this.payment != null || !ReservationStatus.PENDING.equals(this.status)) {
-            throw new AlreadyPaidException();
-        }
-        if (LocalDateTime.now().isAfter(this.expiredAt)) {
-            throw new ReservationExpiredException();
-        }
-
-        return MoviePayment.create(this, idempotencyKey, this.originalAmount, method);
-    }
-
-    /** 승인된 결제로 예매를 확정한다. 부분 결제는 금액 불일치로 거부한다. */
-    public void completePayment(MoviePayment payment) {
-        Assert.notNull(payment, "payment can not be null");
-
-        if (this.payment != null) {
-            throw new AlreadyPaidException();
-        }
-        // 다른 예매의 결제로 확정하는 것을 막는다. 프록시 비교를 피하려고 id 로 비교한다.
-        if (!Objects.equals(payment.getReservation().getId(), this.id)) {
-            throw new IllegalArgumentException("다른 예매의 결제입니다.");
-        }
-        if (!PaymentStatus.COMPLETE.equals(payment.getStatus())) {
-            throw new IllegalStateException("승인되지 않은 결제입니다: " + payment.getStatus());
-        }
-        if (payment.getPaidAmount().compareTo(this.originalAmount) != 0) {
-            throw new PaymentAmountMismatchException();
-        }
-
+    public void setPayment(MoviePayment payment) {
         this.payment = payment;
-        this.confirm();
     }
+
+    //    /** 결제 시도 생성. 이미 결제됐거나 결제 대기(PENDING)가 아닌 예매, 만료된 예매는 거부한다. */
+//    public MoviePayment startPayment(String idempotencyKey, PaymentMethod method) {
+//        if (this.payment != null || !ReservationStatus.PENDING.equals(this.status)) {
+//            throw new AlreadyPaidException();
+//        }
+//        if (LocalDateTime.now().isAfter(this.expiredAt)) {
+//            throw new ReservationExpiredException();
+//        }
+//
+//        return MoviePayment.create(this, idempotencyKey, this.originalAmount, method);
+//    }
+//
+//    /** 승인된 결제로 예매를 확정한다. 부분 결제는 금액 불일치로 거부한다. */
+//    public void completePayment(MoviePayment payment) {
+//        Assert.notNull(payment, "payment can not be null");
+//
+//        if (this.payment != null) {
+//            throw new AlreadyPaidException();
+//        }
+//        // 다른 예매의 결제로 확정하는 것을 막는다. 프록시 비교를 피하려고 id 로 비교한다.
+//        if (!Objects.equals(payment.getReservation().getId(), this.id)) {
+//            throw new IllegalArgumentException("다른 예매의 결제입니다.");
+//        }
+//        if (!PaymentStatus.COMPLETE.equals(payment.getStatus())) {
+//            throw new IllegalStateException("승인되지 않은 결제입니다: " + payment.getStatus());
+//        }
+//        if (payment.getPaidAmount().compareTo(this.originalAmount) != 0) {
+//            throw new PaymentAmountMismatchException();
+//        }
+//
+//        this.payment = payment;
+//        this.checkPayable();
+//    }
 }

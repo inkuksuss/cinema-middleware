@@ -48,7 +48,7 @@ public class MoviePayment extends DefaultEntity {
 
     private LocalDateTime canceledAt;
 
-    static MoviePayment create(MovieReservation reservation, String idempotencyKey, BigDecimal paidAmount, PaymentMethod method) {
+    public static MoviePayment create(MovieReservation reservation, String idempotencyKey, BigDecimal paidAmount, PaymentMethod method, PaymentStatus status) {
         Assert.notNull(reservation, "reservation can not be null");
         Assert.hasText(idempotencyKey, "idempotencyKey can not be empty");
         Assert.notNull(paidAmount, "paidAmount can not be null");
@@ -59,7 +59,9 @@ public class MoviePayment extends DefaultEntity {
         moviePayment.idempotencyKey = idempotencyKey;
         moviePayment.paidAmount = paidAmount;
         moviePayment.method = method;
-        moviePayment.status = PaymentStatus.PENDING;
+        moviePayment.status = status;
+
+        reservation.setPayment(moviePayment);
 
         return moviePayment;
     }

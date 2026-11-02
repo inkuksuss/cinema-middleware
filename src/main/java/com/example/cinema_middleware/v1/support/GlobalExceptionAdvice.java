@@ -7,7 +7,13 @@ import com.example.cinema_middleware.v1.support.exception.*;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.ObjectNotFoundException;
 import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.dao.QueryTimeoutException;
+import org.springframework.transaction.CannotCreateTransactionException;
+import org.springframework.transaction.TransactionTimedOutException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -140,13 +146,35 @@ public class GlobalExceptionAdvice {
                 .body(Result.of(ResponseCode.INVALID_ARGUMENT.getCode(), e.getMessage(), null));
     }
 
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.CONFLICT)
     @ExceptionHandler(value = { ConstraintViolationException.class, DataIntegrityViolationException.class })
-    public ResponseEntity<Result<Void>> databaseExceptionHandler(MethodArgumentNotValidException e) {
+    public ResponseEntity<Result<Void>> databaseExceptionHandler(Exception e) {
         log.error("[ex handler] ex", e);
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(Result.of(ResponseCode.INVALID_ARGUMENT.getCode(), "Invalid request", null));
+                .status(HttpStatus.CONFLICT)
+                .body(Result.of(ResponseCode.TRANSACTION_FAILED.getCode(), "Transaction failed", null));
+    }
+
+    /**
+     * 혼잡·일시 장애로 정해진 시간 안에 처리하지 못한 경우. 오래 기다리지 않고 재시도를 안내한다.
+     * - CannotCreateTransactionException: 커넥션 풀 대기(hikari.connection-timeout) 초과
+     * - QueryTimeoutException, TransactionTimedOutException: 쿼리·트랜잭션·Redis 명령 시간 초과
+     * - DataAccessResourceFailureException: DB·Redis 연결 실패(RedisConnectionFailureException 포함)
+     * - PessimisticLockingFailureException: 행 잠금 대기 초과·교착
+     */
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    @ExceptionHandler(value = {
+            CannotCreateTransactionException.class,
+            QueryTimeoutException.class,
+            TransactionTimedOutException.class,
+            DataAccessResourceFailureException.class,
+            PessimisticLockingFailureException.class
+    })
+    public ResponseEntity<Result<Void>> serviceUnavailableExceptionHandler(Exception e) {
+        log.error("[ex handler] ex", e);
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Result.of(ResponseCode.SERVICE_UNAVAILABLE.getCode(), "잠시 후 다시 시도해주세요.", null));
     }
 
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
