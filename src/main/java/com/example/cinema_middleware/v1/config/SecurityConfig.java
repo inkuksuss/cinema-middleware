@@ -16,6 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import tools.jackson.databind.ObjectMapper;
 
 
 @Configuration
@@ -26,6 +27,7 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;
     private final AuthTokenRepository authTokenRepository;
+    private final ObjectMapper objectMapper;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -56,7 +58,7 @@ public class SecurityConfig {
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(
-                        new JwtAuthenticationFilter(jwtTokenProvider, authTokenRepository),
+                        new JwtAuthenticationFilter(jwtTokenProvider, authTokenRepository, objectMapper),
                         UsernamePasswordAuthenticationFilter.class
                 );
 
