@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# load-test-writer 에이전트 전용 PreToolUse 훅. Write/Edit 를 scripts/load/ 의 .sh·.js 로 제한한다.
+# load-test-writer 에이전트 전용 PreToolUse 훅. Write/Edit 를 scripts/load/ 의 .sh·.js 와
+# 시나리오 디렉터리의 README.md 로 제한한다.
 # 차단은 exit 2 + stderr. Claude Code 가 도구 호출을 막고 이 메시지를 에이전트에게 전달한다.
 set -uo pipefail
 
@@ -22,8 +23,12 @@ case "$path" in
   *) echo "scripts/load/ 밖은 수정할 수 없습니다: $path" >&2; exit 2 ;;
 esac
 
-# 허용 확장자: .sh, .js 만. 그 외는 사용자에게 제안만 한다
+# 허용 파일: .sh, .js, 그리고 scripts/load/<시나리오>/README.md 한 단계 깊이만. 그 외는 제안만 한다
 case "$path" in
   *.sh|*.js) exit 0 ;;
-  *) echo ".sh·.js 외 확장자는 만들 수 없습니다: $path (필요하면 사용자에게 제안)" >&2; exit 2 ;;
+  "$root"/scripts/load/*/README.md)
+    rel="${path#"$root"/scripts/load/}"
+    case "$rel" in */*/*) ;; *) exit 0 ;; esac    # <시나리오>/README.md 만 허용
+    echo "README.md 는 scripts/load/<시나리오>/ 바로 아래에만 둘 수 있습니다: $path" >&2; exit 2 ;;
+  *) echo ".sh·.js 와 시나리오별 README.md 외에는 만들 수 없습니다: $path (필요하면 사용자에게 제안)" >&2; exit 2 ;;
 esac
