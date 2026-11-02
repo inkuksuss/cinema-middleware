@@ -21,11 +21,9 @@ public class CinemaRepositoryImpl implements CinemaRepositoryQuery {
         Tuple tuple = queryFactory
                 .select(cinema.id, theater.id)
                 .from(cinema)
-                .leftJoin(theater.cinema, cinema)
-                .where(
-                        cinema.id.eq(cinemaId),
-                        theater.name.eq(name)
-                )
+                .leftJoin(theater)
+                .on(cinema.id.eq(theater.cinema.id), theater.name.eq(name))
+                .where(cinema.id.eq(cinemaId))
                 .fetchFirst();
 
         if (tuple == null || tuple.get(cinema.id) == null) throw new TargetNotFoundException("존재하지 않는 cinemaId입니다.");
