@@ -1,6 +1,8 @@
 package com.example.cinema_middleware.v1.service;
 
+import com.example.cinema_middleware.v1.domain.entity.Movie;
 import com.example.cinema_middleware.v1.domain.entity.Screening;
+import com.example.cinema_middleware.v1.domain.entity.Theater;
 import com.example.cinema_middleware.v1.repository.ScreeningRepository;
 import com.example.cinema_middleware.v1.repository.dao.ScreeningDao;
 import com.example.cinema_middleware.v1.service.dto.ScreeningDto;
@@ -26,12 +28,9 @@ public class AdminScreeningService {
 
     private final ScreeningRepository screeningRepository;
     private final AdminMovieReservationService reservationService;
+    private final AdminTheaterService theaterService;
+    private final AdminMovieService movieService;
 
-    public boolean checkHavingScreening(Long theaterId) {
-        LocalDateTime now = LocalDateTime.now();
-
-        return screeningRepository.existsAlreadyUsing(theaterId, now.toLocalDate(), now.toLocalTime());
-    }
 
     public Page<ScreeningDto.AdminSummary> getSummary(
             Pageable pageable,
@@ -76,5 +75,12 @@ public class AdminScreeningService {
         if (reservationService.checkHavingAliveReservation(screeningId)) {
             throw new ScreeningHaveReservationException();
         }
+    }
+
+    public void create(ScreeningCommand.Create command) {
+        Movie findMovie = movieService.getAvailableById(command.movieId());
+        Theater findTheater = theaterService.getAvailableById(command.theaterId());
+
+        screeningRepository.save(Screening.create(findMovie, findTheater, command.screenType(), command.startDate(), command.startAt(), command.status()));
     }
 }

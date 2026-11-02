@@ -1,6 +1,8 @@
 package com.example.cinema_middleware.v1.service;
 
 import com.example.cinema_middleware.v1.domain.entity.Theater;
+import com.example.cinema_middleware.v1.domain.entity.enums.TheaterStatus;
+import com.example.cinema_middleware.v1.repository.ScreeningRepository;
 import com.example.cinema_middleware.v1.repository.TheaterRepository;
 import com.example.cinema_middleware.v1.service.dto.*;
 import com.example.cinema_middleware.v1.service.factory.TheaterDtoFactory;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -22,8 +25,8 @@ import java.util.List;
 public class AdminTheaterService {
 
     private final TheaterRepository theaterRepository;
+    private final ScreeningRepository screeningRepository;
     private final AdminSeatService seatService;
-    private final AdminScreeningService screeningService;
     private final AdminCinemaService cinemaService;
 
     public Page<TheaterDto.Summary> getTheaterSummary(Pageable pageable, Long cinemaId) {
@@ -63,8 +66,11 @@ public class AdminTheaterService {
 
     public void remove(Long theaterId) {
         Assert.notNull(theaterId, "theaterId can not be null");
+        LocalDateTime now = LocalDateTime.now();
 
-        if (screeningService.checkHavingScreening(theaterId)) throw new TheaterInUseException();
+        if (screeningRepository.existsAlreadyUsing(theaterId, now.toLocalDate(), now.toLocalTime())) {
+            throw new TheaterInUseException();
+        }
 
         theaterRepository.deleteById(theaterId);
     }
@@ -92,5 +98,10 @@ public class AdminTheaterService {
         Assert.notNull(seatId, "seatId can not be null");
 
         seatService.remove(seatId);
+    }
+
+    public Theater getAvailableById(Long theaterId) {
+        return theaterRepository.findByIdAndStatus(theaterId, TheaterStatus.AVAILABLE)
+                .orElseThrow(TargetNotFoundException::new);
     }
 }

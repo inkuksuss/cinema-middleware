@@ -48,7 +48,8 @@ public class AdminSeatService {
                     theater,
                     seat.seatRow(),
                     seat.seatColumn(),
-                    seat.grade())
+                    seat.grade(),
+                    seat.price())
             );
 
             if (offset >= limit) {

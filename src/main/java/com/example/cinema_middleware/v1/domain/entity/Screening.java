@@ -47,9 +47,10 @@ public class Screening extends DefaultEntity {
     @Column(nullable = false, length = 30)
     private ScreeningStatus status;
 
-    public static Screening create(Movie movie, Theater theater, LocalDate startDate, LocalTime startAt, ScreeningStatus status) {
+    public static Screening create(Movie movie, Theater theater, ScreenType screenType, LocalDate startDate, LocalTime startAt, ScreeningStatus status) {
         Assert.notNull(movie, "movie can not be null");
         Assert.notNull(theater, "theater can not be null");
+        Assert.notNull(screenType, "screenType can not be null");
         Assert.notNull(startDate, "startDate can not be null");
         Assert.notNull(startAt, "startAt can not be null");
         Assert.notNull(status, "status can not be null");
@@ -57,6 +58,7 @@ public class Screening extends DefaultEntity {
         Screening screening = new Screening();
         screening.movie = movie;
         screening.theater = theater;
+        screening.screenType = screenType;
         screening.startDate = startDate;
         screening.startAt = startAt;
         screening.status = status;

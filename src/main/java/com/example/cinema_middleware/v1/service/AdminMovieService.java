@@ -80,4 +80,9 @@ public class AdminMovieService {
     public void remove(Long movieId) {
         movieRepository.deleteById(movieId);
     }
+
+    public Movie getAvailableById(Long movieId) {
+        return movieRepository.findByIdAndStatus(movieId, MovieStatus.DISPLAY)
+                .orElseThrow(TargetNotFoundException::new);
+    }
 }

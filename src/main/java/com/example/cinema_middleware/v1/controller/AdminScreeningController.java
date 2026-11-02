@@ -48,6 +48,15 @@ public class AdminScreeningController {
                 .body(Result.ofSuccess(result));
     }
 
+    @PostMapping("/")
+    public ResponseEntity<Result<Void>> createScreening(@RequestBody ScreeningRequest.Create request) {
+        screeningService.create(request.toCommand());
+
+        return ResponseEntity
+                .ok()
+                .body(Result.ofSuccess());
+    }
+
     @PatchMapping("/{screeningId}")
     public ResponseEntity<Result<Void>> modifyScreening(
             @PathVariable Long screeningId,

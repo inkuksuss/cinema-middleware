@@ -50,17 +50,19 @@ public class TheaterSeat extends DefaultEntity {
     @Column(nullable = false, length = 30)
     private SeatStatus status;
 
-    public static TheaterSeat create(Theater theater, String seatRow, String seatColumn, SeatGrade grade) {
+    public static TheaterSeat create(Theater theater, String seatRow, String seatColumn, SeatGrade grade, BigDecimal price) {
         Assert.notNull(theater, "theater can not be null");
         Assert.hasText(seatRow, "seatRow can not be null");
         Assert.hasText(seatColumn, "seatColumn can not be null");
         Assert.notNull(grade, "grade can not be null");
+        Assert.notNull(price, "price can not be null");
 
         TheaterSeat theaterSeat = new TheaterSeat();
         theaterSeat.theater = theater;
         theaterSeat.seatRow = seatRow;
         theaterSeat.seatColumn = seatColumn;
         theaterSeat.grade = grade;
+        theaterSeat.price = price;
         theaterSeat.status = SeatStatus.AVAILABLE;
 
         return theaterSeat;
