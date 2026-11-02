@@ -27,8 +27,8 @@ public class SeatDao {
 
     public record SeatCounter(
             Long screeningId,
-            Integer totalSeatCount,
-            Integer soldOutSeatCount
+            Long totalSeatCount,
+            Long soldOutSeatCount
     ) {
     }
 }

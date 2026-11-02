@@ -43,6 +43,7 @@ public class FileMaster extends DefaultEntity {
 
     private String contentType;
 
+    @Column(nullable = false)
     private Integer viewOrder = 1;
 
     @Column(nullable = false)
