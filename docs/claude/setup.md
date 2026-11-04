@@ -3,7 +3,8 @@
 ## 명령어
 
 ```bash
-docker compose up -d                  # MySQL 8.4(:13306) + Redis 8.0(:16379). 앱 실행 전에 필요
+cp .env.example .env                  # 최초 1회: 접속 정보 env 파일 준비(아래 "env 파일" 참고)
+docker compose up -d                  # MySQL 8.4 + Redis 8.0 (호스트 포트는 .env). 앱 실행 전에 필요
 ./gradlew bootRun                     # 앱 실행 (:8080)
 ./gradlew test                        # 전체 테스트 (JUnit 5)
 ./gradlew test --tests "com.example.cinema_middleware.v1.service.ScreeningServiceTest"
@@ -22,6 +23,26 @@ bash scripts/load-test-data.sh        # 테스트 데이터 적재 → test-data
   넣으면 환경변수보다 우선해 compose 설정이 무시되므로 넣지 않는다. compose 없이 이미지를 띄우면 기본 프로파일이다.
 - `docker-compose-dev.yml`·`docker-compose-prod.yml` 은 앱 서비스만 정의하고 `mysql`·`redis` 서비스의 healthy 상태에 의존한다.
   인프라 정의는 `docker-compose.yml` 에 있으므로 함께 `-f` 로 지정한다.
+
+## env 파일 (접속 정보)
+
+compose 파일에는 접속 정보 값을 쓰지 않는다. 모든 값은 저장소 루트의 env 파일에 둔다.
+
+| 파일 | git | 읽는 쪽 | 키 |
+| --- | --- | --- | --- |
+| `.env.example` | 커밋 | 템플릿(키만, 값 비움) | 아래 전부 |
+| `.env` | 제외 | compose 변수 치환(자동 로드), mysql `env_file`, `scripts/` | `MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_HOST_PORT`, `REDIS_HOST_PORT`, `APP_HOST_PORT` |
+| `.env.dev` | 제외 | `docker-compose-dev.yml` 앱 `env_file` | `SPRING_DATASOURCE_URL`·`_USERNAME`·`_PASSWORD`, `SPRING_DATA_REDIS_HOST`·`_PORT` |
+| `.env.prod` | 제외 | `docker-compose-prod.yml` 앱 `env_file` | 〃 |
+
+- 파일이 없거나 포트 키가 비면 compose 가 바로 오류를 낸다(`env_file` 기본 required, 포트는 `${...:?}`).
+- **mysql-data 볼륨은 최초 기동 때의 `MYSQL_*` 값으로 계정이 만들어진다.** 이후 `.env` 값을 바꿔도 DB 계정은 그대로라
+  접속이 실패한다. 바꾸려면 DB 에서 직접 계정을 변경하거나 볼륨을 재생성한다.
+- 로컬은 dev·prod 앱이 같은 MySQL 을 쓰므로 `.env.dev`·`.env.prod` 의 계정은 `.env` 의 `MYSQL_USER`·`MYSQL_PASSWORD` 와 같아야 한다.
+  앱 컨테이너는 compose 네트워크 안에서 서비스 이름(`mysql`, `redis`)과 컨테이너 포트(3306, 6379)로 접속한다.
+- mysql healthcheck 는 컨테이너 환경변수 `$MYSQL_ROOT_PASSWORD` 를 쓴다(compose 파일에 값 없음).
+- 스크립트(`scripts/load-test-data.sh`, `scripts/load/**`)는 `scripts/dotenv.sh` 의 `load_dotenv` 로 `.env` 를 읽는다.
+  파일을 실행하지 않고 `KEY=VALUE` 만 파싱하며, export 하지 않고, 이미 지정된 환경변수(`DB_PASS` 등)가 우선한다.
 
 ## 스키마
 
@@ -45,7 +66,7 @@ bash scripts/load-test-data.sh        # 테스트 데이터 적재 → test-data
 - 공통: `open-in-view: false`, SQL 로그 DEBUG + 바인딩 TRACE.
 - 환경변수로 오버라이드: `SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD`,
   `SPRING_DATA_REDIS_HOST` / `_PORT`, `JWT_SECRET`. 기본값이 yaml 에 하드코딩되어 있으니 운영 시크릿을 커밋하지 않는다.
-- `application*.yaml` 은 `.gitignore`(`/src/**/*.yaml`) 대상이라 저장소에 없다. 값은 로컬 파일과 `docker-compose*.yml` 을 본다.
+- `application*.yaml` 은 `.gitignore`(`/src/**/*.yaml`) 대상이라 저장소에 없다. 값은 로컬 파일과 env 파일(`.env*`)을 본다.
 - `jwt.*` 는 `JwtProperties`(record, `@ConfigurationPropertiesScan`)로 바인딩된다.
 - enum 입력은 대소문자를 구분하지 않는다 — JSON 본문은 `jackson.mapper.accept-case-insensitive-enums`,
   쿼리·경로 파라미터는 `WebConfig` 에 등록한 `StringToEnumConverterFactory`(빈 문자열 → null).

@@ -3,7 +3,7 @@
 영화관 예매 백엔드 API (Spring Boot 4.1 · Java 21 · JPA/QueryDSL · MySQL · Redis)
 
 ## 필수 규칙
-- 앱 실행 전 `docker compose up -d`
+- 앱 실행 전 `docker compose up -d` (접속 정보는 `.env`·`.env.dev`·`.env.prod`, 템플릿 `.env.example` — `setup.md` 참고)
 - 스키마 단일 소스는 `schema.sql`. 엔티티 변경 시 함께 수정
 - 응답은 `Result<T>`, 새 예외는 `GlobalExceptionAdvice` 에 등록
 - `docs/HISTORY.md` 절대 수정 금지
