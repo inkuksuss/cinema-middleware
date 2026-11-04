@@ -43,6 +43,7 @@
 | `BadCredentialsException` | 401 | `NO_MATCH_EMAIL_OR_PASSWORD` |
 | `AuthenticationException` | 401 | `ILLEGAL_STATE` |
 | `TargetNotFoundException` | 404 | `NOT_FOUND` |
+| `NoResourceFoundException`(매핑 없는 경로, 스택 없이 WARN 로그) | 404 | `NOT_FOUND` |
 | `DuplicateValueException` | 409 | `DUPLICATE_VALUE` |
 | `ObjectNotFoundException` | 400 | `NOT_FOUND` |
 | `FileSaveFailedException` | 400 | `INVALID_FILE` |
@@ -71,3 +72,4 @@
 | `AdminScreeningController` | `/api/v1/admin/screening` — `GET /`, `GET·PATCH·DELETE /{screeningId}` |
 | `AdminTheaterController` | `/api/v1/admin/theater` — `GET·POST /`, `PUT·DELETE /{theaterId}`, `GET·POST /{theaterId}/seat`, `DELETE /{seatId}/seat` |
 | `AdminMovieReservationController` | `/api/v1/admin/reservation` — `GET /`, `GET /{id}`, `POST /{id}/cancel` |
+| (actuator) | `GET /actuator/health` — UP 200 / DOWN 503, 상세 비노출 |

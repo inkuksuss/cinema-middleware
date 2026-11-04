@@ -9,15 +9,19 @@ docker compose up -d                  # MySQL 8.4(:13306) + Redis 8.0(:16379). �
 ./gradlew test --tests "com.example.cinema_middleware.v1.service.ScreeningServiceTest"
 ./gradlew compileJava                 # QueryDSL Q 클래스 재생성 (build/generated/)
 ./gradlew jibDockerBuild              # 로컬 이미지 빌드 → cinema-middleware:latest, :0.0.1-SNAPSHOT
-docker compose -f docker-compose-prod.yml up -d   # 앱 컨테이너(prod 프로파일) 실행
+docker compose -f docker-compose.yml -f docker-compose-dev.yml up -d    # 앱 컨테이너(dev 프로파일) 실행 — /local-deploy
+docker compose -f docker-compose.yml -f docker-compose-prod.yml up -d   # 앱 컨테이너(prod 프로파일) 실행
 bash scripts/load-test-data.sh        # 테스트 데이터 적재 → test-data.md
 ```
 
 - 린터·포매터 설정은 없다.
 - **Dockerfile 이 없다.** 이미지는 Gradle Jib 플러그인이 만든다
-  (base `eclipse-temurin:21-jre`, `linux/arm64` 고정, JVM `-Xms512m -Xmx512m -Dspring.profiles.active=prod`).
-- `docker-compose-prod.yml` 은 앱 서비스만 정의하고 `mysql`·`redis` 서비스의 healthy 상태에 의존한다.
-  인프라는 `docker-compose.yml` 로 먼저 올린다.
+  (base `eclipse-temurin:21-jre`, `linux/arm64` 고정, JVM `-Xms512m -Xmx512m`).
+- **프로파일은 이미지에 고정하지 않는다.** compose 의 `SPRING_PROFILES_ACTIVE` 로 정한다
+  (`docker-compose-dev.yml` → dev, `docker-compose-prod.yml` → prod). jvmFlags 에 `-Dspring.profiles.active` 를
+  넣으면 환경변수보다 우선해 compose 설정이 무시되므로 넣지 않는다. compose 없이 이미지를 띄우면 기본 프로파일이다.
+- `docker-compose-dev.yml`·`docker-compose-prod.yml` 은 앱 서비스만 정의하고 `mysql`·`redis` 서비스의 healthy 상태에 의존한다.
+  인프라 정의는 `docker-compose.yml` 에 있으므로 함께 `-f` 로 지정한다.
 
 ## 스키마
 
@@ -46,6 +50,8 @@ bash scripts/load-test-data.sh        # 테스트 데이터 적재 → test-data
 - enum 입력은 대소문자를 구분하지 않는다 — JSON 본문은 `jackson.mapper.accept-case-insensitive-enums`,
   쿼리·경로 파라미터는 `WebConfig` 에 등록한 `StringToEnumConverterFactory`(빈 문자열 → null).
 - `spring-boot-starter-kafka` 의존성은 있지만 코드에서 쓰는 곳은 없다.
+- actuator 는 `health` 만 노출한다(`management.endpoints.web.exposure.include`, `show-details: never`).
+  DB·Redis 인디케이터가 포함되어 하나라도 DOWN 이면 503. `/local-deploy` 의 헬스체크가 이 엔드포인트를 쓴다.
 
 ### 타임아웃 (`application.yaml`, prod 상속)
 원칙은 "혼잡·장애 시 오래 붙잡지 말고 빨리 실패 안내"다. 시간 초과는 HTTP 503 + `SERVICE_UNAVAILABLE`(28)로 응답한다.
