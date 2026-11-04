@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 
@@ -78,6 +79,18 @@ public class GlobalExceptionAdvice {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(Result.of(ResponseCode.NOT_FOUND.getCode(), "대상을 찾을 수 없습니다.", null));
+    }
+
+    /**
+     * 매핑되지 않은 경로 요청. 클라이언트 오류이고 스캐너 요청이 잦으므로 스택 없이 WARN 한 줄만 남긴다.
+     */
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler(value = NoResourceFoundException.class)
+    public ResponseEntity<Result<Void>> noResourceFoundExceptionHandler(NoResourceFoundException e) {
+        log.warn("[ex handler] no resource: {} /{}", e.getHttpMethod(), e.getResourcePath());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(Result.of(ResponseCode.NOT_FOUND.getCode(), "존재하지 않는 경로입니다.", null));
     }
 
     @ResponseStatus(HttpStatus.CONFLICT)
