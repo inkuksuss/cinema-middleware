@@ -10,11 +10,11 @@
 #     api_call <METHOD> <URL> [JSON]         : API 호출, HTTP 200 + code 200 이면 성공
 #     wait_for_server <BASE_URL> [초]        : 서버가 HTTP 응답할 때까지 대기
 #
-#   DB 에 직접 접속하지 않는다. 테스트 데이터는 관리자 API 로 만들고 지운다.
+#   DB 에 직접 접속하지 않는다. 테스트 데이터 정리는 각 시나리오의 reset.sh 가 한다.
 # =============================================================================
 
 # 부하 테스트가 만든 데이터의 표식: 실제 데이터와 겹치지 않는 상영일 + 상영관 이름 접두어
-# (cleanup.sh 는 두 조건이 모두 맞는 회차·상영관만 지운다)
+# (seat-race/reset.sh 는 이름 접두어가 맞는 상영관과 그 회차만 지운다)
 # shellcheck disable=SC2034
 LOADTEST_SCREENING_DATE='2099-12-31'
 # shellcheck disable=SC2034
