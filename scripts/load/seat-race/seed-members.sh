@@ -9,15 +9,14 @@
 #   cost 4 → 로그인 검증이 빨라 15만 명 로그인이 access 토큰 수명(로컬 30분) 안에 끝난다.
 #
 # 사용법:
-#   RUN_TAG=... DB_PASS=... LOAD_TEST_PASSWORD=... bash scripts/load/seat-race/seed-members.sh
+#   RUN_TAG=... LOAD_TEST_PASSWORD=... bash scripts/load/seat-race/seed-members.sh
 #   (run.sh 가 RUN_TAG·MEMBER_COUNT 를 정해 호출한다)
 #
-# 환경변수:
-#   RUN_TAG(필수, 소문자·숫자 1~20자) DB_PASS(필수, docker-compose.yml 의 MYSQL_PASSWORD)
-#   LOAD_TEST_PASSWORD(필수) MEMBER_COUNT(150000, 최대 999999)
-#   DB_NAME(cinema) DB_USER(cinema_admin) COMPOSE_SERVICE(mysql)
+# 환경변수 (DB_* 는 미지정 시 저장소 루트 .env 의 값):
+#   RUN_TAG(필수, 소문자·숫자 1~20자) LOAD_TEST_PASSWORD(필수) MEMBER_COUNT(150000, 최대 999999)
+#   DB_PASS(MYSQL_PASSWORD) DB_NAME(MYSQL_DATABASE) DB_USER(MYSQL_USER) COMPOSE_SERVICE(mysql)
 #
-# DB 비밀번호는 이 파일에 쓰지 않는다. 환경변수로만 받는다.
+# DB 접속 정보는 이 파일에 쓰지 않는다. .env 또는 환경변수로만 받는다.
 # =============================================================================
 # -e: 명령 실패 시 중단, -u: 미정의 변수 사용 시 중단, -o pipefail: 파이프 중간 실패도 실패로 처리
 set -euo pipefail
@@ -29,11 +28,11 @@ source scripts/load/common.sh
 
 # ----- 설정 (환경변수 + 기본값, 시크릿은 필수 입력) -----
 MEMBER_COUNT="${MEMBER_COUNT:-150000}"
-DB_NAME="${DB_NAME:-cinema}"
-DB_USER="${DB_USER:-cinema_admin}"
+DB_NAME="${DB_NAME:-${MYSQL_DATABASE:?.env 에 MYSQL_DATABASE 가 없습니다(cp .env.example .env)}}"
+DB_USER="${DB_USER:-${MYSQL_USER:?.env 에 MYSQL_USER 가 없습니다(cp .env.example .env)}}"
 COMPOSE_SERVICE="${COMPOSE_SERVICE:-mysql}"
 RUN_TAG="${RUN_TAG:?RUN_TAG 를 지정하세요(run.sh 가 실행마다 만든다)}"
-: "${DB_PASS:?DB_PASS 를 지정하세요(docker-compose.yml 의 MYSQL_PASSWORD)}"
+DB_PASS="${DB_PASS:-${MYSQL_PASSWORD:?.env 에 MYSQL_PASSWORD 가 없습니다(cp .env.example .env)}}"
 : "${LOAD_TEST_PASSWORD:?LOAD_TEST_PASSWORD 를 지정하세요}"
 
 # ----- 입력값 형식 검증 -----

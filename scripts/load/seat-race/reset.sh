@@ -12,14 +12,14 @@
 #   - Redis: 위 회원의 refresh 토큰 키(refresh:<member_id>)
 #
 # 사용법:
-#   DB_PASS=... bash scripts/load/seat-race/reset.sh               # 모든 실행의 데이터 정리
-#   DB_PASS=... bash scripts/load/seat-race/reset.sh --dry-run     # 건수만 확인
+#   bash scripts/load/seat-race/reset.sh               # 모든 실행의 데이터 정리
+#   bash scripts/load/seat-race/reset.sh --dry-run     # 건수만 확인
 #
-# 환경변수:
-#   DB_PASS(필수, docker-compose.yml 의 MYSQL_PASSWORD) DB_NAME(cinema) DB_USER(cinema_admin)
+# 환경변수 (미지정 시 저장소 루트 .env 의 값):
+#   DB_PASS(MYSQL_PASSWORD) DB_NAME(MYSQL_DATABASE) DB_USER(MYSQL_USER)
 #   MYSQL_SERVICE(mysql) REDIS_SERVICE(redis)
 #
-# DB 비밀번호는 이 파일에 쓰지 않는다. 환경변수로만 받는다.
+# DB 접속 정보는 이 파일에 쓰지 않는다. .env 또는 환경변수로만 받는다.
 # =============================================================================
 # -e: 명령 실패 시 중단, -u: 미정의 변수 사용 시 중단, -o pipefail: 파이프 중간 실패도 실패로 처리
 set -euo pipefail
@@ -30,11 +30,11 @@ cd "$(dirname "$0")/../../.."
 source scripts/load/common.sh
 
 # ----- 설정·인자 -----
-DB_NAME="${DB_NAME:-cinema}"
-DB_USER="${DB_USER:-cinema_admin}"
+DB_NAME="${DB_NAME:-${MYSQL_DATABASE:?.env 에 MYSQL_DATABASE 가 없습니다(cp .env.example .env)}}"
+DB_USER="${DB_USER:-${MYSQL_USER:?.env 에 MYSQL_USER 가 없습니다(cp .env.example .env)}}"
 MYSQL_SERVICE="${MYSQL_SERVICE:-mysql}"
 REDIS_SERVICE="${REDIS_SERVICE:-redis}"
-: "${DB_PASS:?DB_PASS 를 지정하세요(docker-compose.yml 의 MYSQL_PASSWORD)}"
+DB_PASS="${DB_PASS:-${MYSQL_PASSWORD:?.env 에 MYSQL_PASSWORD 가 없습니다(cp .env.example .env)}}"
 DRY_RUN=0
 case "${1:-}" in
   '') ;;

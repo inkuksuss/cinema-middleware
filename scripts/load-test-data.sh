@@ -11,21 +11,26 @@
 #   bash scripts/load-test-data.sh
 #   BASE_DATE=2026-12-25 bash scripts/load-test-data.sh   # 기준일 변경
 #
-# 환경변수 (미지정 시 docker-compose.yml 기본값):
-#   DB_NAME(cinema) DB_USER(cinema_admin) DB_PASS
+# 환경변수 (미지정 시 저장소 루트 .env 의 값 — 템플릿 .env.example):
+#   DB_NAME(MYSQL_DATABASE) DB_USER(MYSQL_USER) DB_PASS(MYSQL_PASSWORD)
 #   COMPOSE_SERVICE(mysql) BASE_DATE(미지정 시 test-data.sql 파일 기본값 2026-11-01)
 # =============================================================================
 set -euo pipefail
 
-DB_NAME="${DB_NAME:-cinema}"
-DB_USER="${DB_USER:-cinema_admin}"
-DB_PASS="${DB_PASS:-cinema_password}"
-COMPOSE_SERVICE="${COMPOSE_SERVICE:-mysql}"
-BASE_DATE="${BASE_DATE:-}"
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT"
+
+# 접속 정보는 .env 에서 읽는다(이미 지정된 환경변수가 우선)
+# shellcheck source=dotenv.sh
+source scripts/dotenv.sh
+load_dotenv .env
+
+DB_NAME="${DB_NAME:-${MYSQL_DATABASE:-}}"
+DB_USER="${DB_USER:-${MYSQL_USER:-}}"
+DB_PASS="${DB_PASS:-${MYSQL_PASSWORD:-}}"
+COMPOSE_SERVICE="${COMPOSE_SERVICE:-mysql}"
+BASE_DATE="${BASE_DATE:-}"
 
 SCHEMA_SQL="src/main/resources/schema.sql"
 DATA_SQL="docs/test-data.sql"
@@ -33,6 +38,9 @@ DATA_SQL="docs/test-data.sql"
 log() { printf '\033[1;34m[load-test-data]\033[0m %s\n' "$*"; }
 err() { printf '\033[1;31m[load-test-data][에러]\033[0m %s\n' "$*" >&2; }
 
+for v in DB_NAME DB_USER DB_PASS; do
+  [ -n "${!v}" ] || { err "$v 가 비었습니다 — .env 를 만드세요(cp .env.example .env)"; exit 1; }
+done
 [ -f "$DATA_SQL" ]   || { err "$DATA_SQL 없음"; exit 1; }
 [ -f "$SCHEMA_SQL" ] || { err "$SCHEMA_SQL 없음"; exit 1; }
 
@@ -49,8 +57,9 @@ fi
 # -----------------------------------------------------------------------------
 log "MySQL 응답 대기..."
 for i in $(seq 1 30); do
+  # 루트 비밀번호는 컨테이너 환경변수에서 읽는다(호스트에 둘 필요 없음)
   if docker compose exec -T "$COMPOSE_SERVICE" \
-       mysqladmin ping -h localhost -uroot -proot --silent 2>/dev/null; then
+       sh -c 'mysqladmin ping -h localhost -uroot -p"$MYSQL_ROOT_PASSWORD" --silent' 2>/dev/null; then
     break
   fi
   [ "$i" -eq 30 ] && { err "MySQL 30초 내 무응답"; exit 1; }

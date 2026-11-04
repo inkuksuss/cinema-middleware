@@ -14,11 +14,11 @@
 #      (KEEP_DATA=1 이면 데이터를 남긴다)
 #
 # 사용법:
-#   DB_PASS=... ./scripts/load/seat-race/run.sh
-#   RATE=1000 DURATION=150s DB_PASS=... ./scripts/load/seat-race/run.sh   # RATE x 초 = TOTAL
+#   ./scripts/load/seat-race/run.sh                                  # DB 접속 정보는 .env 에서 읽음
+#   RATE=1000 DURATION=150s ./scripts/load/seat-race/run.sh          # RATE x 초 = TOTAL
 #
-# 환경변수:
-#   DB_PASS(필수, docker-compose.yml 의 MYSQL_PASSWORD) BASE_URL(http://localhost:8080)
+# 환경변수 (DB_PASS·BASE_URL 은 미지정 시 저장소 루트 .env 의 값):
+#   DB_PASS(MYSQL_PASSWORD) BASE_URL(http://localhost:<APP_HOST_PORT>)
 #   TOTAL(150000, 회원 수 = 요청 수) RATE(5000) DURATION(30s) PRE_VUS(2000) MAX_VUS(5000)
 #   SCREENINGS(3) SEATS(1000) REQ_TIMEOUT(30s) GRACEFUL_STOP(60s) LOGIN_CONCURRENCY(200)
 #   TOKEN_TTL_SEC(1800, 로컬 access 토큰 수명) CINEMA_ID(1) MOVIE_ID(미지정 시 자동 선택)
@@ -38,7 +38,7 @@ source scripts/load/common.sh
 SCENARIO_DIR="scripts/load/seat-race"
 
 # ----- 설정 (환경변수 + 기본값) -----
-BASE="${BASE_URL:-http://localhost:8080}"
+BASE="${BASE_URL:-$DEFAULT_BASE_URL}"
 TOTAL="${TOTAL:-150000}"
 RATE="${RATE:-5000}"
 DURATION="${DURATION:-30s}"
@@ -53,9 +53,9 @@ TOKEN_TTL_SEC="${TOKEN_TTL_SEC:-1800}"
 CINEMA_ID="${CINEMA_ID:-1}"
 MOVIE_ID="${MOVIE_ID:-}"
 RESULT_DIR="${RESULT_DIR:-build/load-test/seat-race/$(date +%Y%m%d-%H%M%S)}"
-# 회원 적재(seed-members.sh)용 DB 비밀번호. 이 파일에 값을 쓰지 않고 환경변수로만 받는다.
-# export 하지 않고 seed-members.sh 에만 넘긴다(node·k6 프로세스 환경에 남기지 않음)
-: "${DB_PASS:?DB_PASS 를 지정하세요(docker-compose.yml 의 MYSQL_PASSWORD)}"
+# 회원 적재(seed-members.sh)·정리(reset.sh)용 DB 비밀번호. 이 파일에 값을 쓰지 않고 .env 또는 환경변수로 받는다.
+# export 하지 않고 두 스크립트에만 넘긴다(node·k6 프로세스 환경에 남기지 않음)
+DB_PASS="${DB_PASS:-${MYSQL_PASSWORD:?.env 에 MYSQL_PASSWORD 가 없습니다(cp .env.example .env)}}"
 # 이번 실행 회원 이메일 표식(실행 시각). 실행마다 달라 회원을 새로 만든다
 RUN_TAG="$(date +%y%m%d%H%M%S)"
 # 1 이면 종료 시 reset.sh 를 건너뛴다(데이터 확인용)
@@ -98,10 +98,10 @@ on_exit() {
   rm -f "$TOKEN_FILE"
   header "7. 정리"
   if [ "$KEEP_DATA" = "1" ]; then
-    info "KEEP_DATA=1 — 데이터를 남깁니다. 정리: DB_PASS=... bash $SCENARIO_DIR/reset.sh"
+    info "KEEP_DATA=1 — 데이터를 남깁니다. 정리: bash $SCENARIO_DIR/reset.sh"
   else
     DB_PASS="$DB_PASS" bash "$SCENARIO_DIR/reset.sh" \
-      || warn "데이터 정리 실패 — 다시 실행: DB_PASS=... bash $SCENARIO_DIR/reset.sh"
+      || warn "데이터 정리 실패 — 다시 실행: bash $SCENARIO_DIR/reset.sh"
   fi
   exit "$code"
 }

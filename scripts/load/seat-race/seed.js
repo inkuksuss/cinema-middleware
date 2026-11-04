@@ -51,7 +51,7 @@ const SEATS_PER_ROW = 20;
 const LOGIN_RETRY = 3;
 const RETRY_DELAY_MS = 500;
 const CODE_SUCCESS = 200;
-const CLEANUP_CMD = 'DB_PASS=... bash scripts/load/seat-race/reset.sh';
+const CLEANUP_CMD = 'bash scripts/load/seat-race/reset.sh';
 
 // ----- 로그(stderr 전용 — stdout 은 결과 JSON 한 줄만) -----
 const info = (msg) => process.stderr.write(`\x1b[1;34m[info]\x1b[0m ${msg}\n`);

@@ -15,7 +15,7 @@
 #   기준 4  k6: dropped_iterations = 0 (VU 부족으로 시작 못 한 반복이 없어야 함. 요약에 없으면 0)
 #   참고    (판정 제외) code 28 건수, 응답시간 p95/p99, 성공 좌석 합 vs API RESERVED 합
 #
-# 환경변수: BASE_URL(http://localhost:8080) EXPECTED_SEATS(1000) TOTAL(150000) K6_EXIT_CODE
+# 환경변수: BASE_URL(http://localhost:<.env 의 APP_HOST_PORT>) EXPECTED_SEATS(1000) TOTAL(150000) K6_EXIT_CODE
 # =============================================================================
 # -e: 명령 실패 시 중단, -u: 미정의 변수 사용 시 중단, -o pipefail: 파이프 중간 실패도 실패로 처리
 set -euo pipefail
@@ -31,7 +31,7 @@ SUMMARY="${1:-}"
 [ "$#" -ge 2 ] || usage
 shift
 SCREENING_IDS=("$@")
-BASE="${BASE_URL:-http://localhost:8080}"
+BASE="${BASE_URL:-$DEFAULT_BASE_URL}"
 EXPECTED_SEATS="${EXPECTED_SEATS:-1000}"
 TOTAL="${TOTAL:-150000}"
 K6_EXIT_CODE="${K6_EXIT_CODE:-}"

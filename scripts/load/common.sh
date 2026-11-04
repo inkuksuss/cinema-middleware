@@ -11,7 +11,17 @@
 #     wait_for_server <BASE_URL> [초]        : 서버가 HTTP 응답할 때까지 대기
 #
 #   DB 에 직접 접속하지 않는다. 테스트 데이터 정리는 각 시나리오의 reset.sh 가 한다.
+#
+#   source 시 저장소 루트 .env 를 읽는다(scripts/dotenv.sh, 이미 지정된 환경변수가 우선).
+#     DB 접속: MYSQL_DATABASE·MYSQL_USER·MYSQL_PASSWORD, 앱 포트: APP_HOST_PORT
 # =============================================================================
+
+# shellcheck source=../dotenv.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../dotenv.sh"
+load_dotenv "$(dirname "${BASH_SOURCE[0]}")/../../.env"
+# 앱 기본 주소(BASE_URL 미지정 시)
+# shellcheck disable=SC2034
+DEFAULT_BASE_URL="http://localhost:${APP_HOST_PORT:-8080}"
 
 # 부하 테스트가 만든 데이터의 표식: 실제 데이터와 겹치지 않는 상영일 + 상영관 이름 접두어
 # (seat-race/reset.sh 는 이름 접두어가 맞는 상영관과 그 회차만 지운다)
