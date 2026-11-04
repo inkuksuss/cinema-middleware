@@ -26,6 +26,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jdbc-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
@@ -66,7 +67,8 @@ jib {
 		tags = ["latest", project.version.toString()]
 	}
 	container {
-		jvmFlags = ['-Xms512m', '-Xmx512m', '-Dspring.profiles.active=prod']
+		// 프로파일은 이미지에 고정하지 않고 compose 의 SPRING_PROFILES_ACTIVE 로 정한다(-D 는 환경변수보다 우선하므로 넣지 않는다).
+		jvmFlags = ['-Xms512m', '-Xmx512m']
 		ports = ["8080"]
 		creationTime.set("USE_CURRENT_TIMESTAMP")
 	}
