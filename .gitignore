@@ -38,3 +38,7 @@ out/
 
 ### Custom
 /src/**/*.yaml
+
+# 접속 정보(계정·비밀번호·URL·포트) env 파일. 템플릿 .env.example 만 커밋한다
+/.env*
+!/.env.example

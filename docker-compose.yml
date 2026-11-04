@@ -1,17 +1,17 @@
+# 로컬 인프라(MySQL·Redis). 접속 정보는 .env(git 제외, 템플릿 .env.example)에서 읽는다.
+# compose 는 같은 폴더의 .env 를 변수 치환에 자동으로 쓴다.
 services:
   mysql:
     image: mysql:8.4
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: cinema
-      MYSQL_USER: cinema_admin
-      MYSQL_PASSWORD: cinema_password
+    # MYSQL_ROOT_PASSWORD, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
+    env_file: .env
     ports:
-      - "13306:3306"
+      - "${MYSQL_HOST_PORT:?.env 에 MYSQL_HOST_PORT 를 지정하세요}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      # 컨테이너 환경변수의 루트 비밀번호를 쓴다($$ 는 compose 치환을 막아 컨테이너 셸에서 해석되게 함)
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -19,7 +19,7 @@ services:
     image: redis:8.0
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "16379:6379"
+      - "${REDIS_HOST_PORT:?.env 에 REDIS_HOST_PORT 를 지정하세요}:6379"
     volumes:
       - redis-data:/data
     healthcheck:

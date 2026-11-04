@@ -1,0 +1,17 @@
+# 앱 컨테이너(dev 프로파일). docker-compose.yml 과 함께 -f 로 지정한다.
+# 접속 정보는 .env.dev(git 제외, 템플릿 .env.example), 호스트 포트는 .env 의 APP_HOST_PORT.
+services:
+  cinema-middleware:
+    image: cinema-middleware:latest
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+    # SPRING_DATASOURCE_URL·USERNAME·PASSWORD, SPRING_DATA_REDIS_HOST·PORT
+    env_file: .env.dev
+    ports:
+      - "${APP_HOST_PORT:?.env 에 APP_HOST_PORT 를 지정하세요}:8080"
+    restart: unless-stopped

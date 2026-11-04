@@ -1,3 +1,5 @@
+# 앱 컨테이너(prod 프로파일). docker-compose.yml 과 함께 -f 로 지정한다.
+# 접속 정보는 .env.prod(git 제외, 템플릿 .env.example), 호스트 포트는 .env 의 APP_HOST_PORT.
 services:
   cinema-middleware:
     image: cinema-middleware:latest
@@ -8,11 +10,8 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/cinema?useSSL=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-      SPRING_DATASOURCE_USERNAME: cinema_admin
-      SPRING_DATASOURCE_PASSWORD: cinema_password
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
+    # SPRING_DATASOURCE_URL·USERNAME·PASSWORD, SPRING_DATA_REDIS_HOST·PORT
+    env_file: .env.prod
     ports:
-      - "8080:8080"
+      - "${APP_HOST_PORT:?.env 에 APP_HOST_PORT 를 지정하세요}:8080"
     restart: unless-stopped
